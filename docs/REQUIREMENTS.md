@@ -9,7 +9,7 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 | R-003 | Show the top N highest-volume markets (default 20) across both sites. | BUILT | Ranked by 24h volume. Setting for 10/20/30/50. |
 | R-004 | Optionally rank by liquidity (Polymarket) / open interest (Kalshi). | BUILT | Settings. |
 | R-005 | Live prices: auto refresh and refresh on returning to the app. | BUILT | Every 60s while visible. |
-| R-006 | Group the top markets live into topic buckets: Macro / Politics & Geopolitics / Tech & AI / Companies, Energy & Commodities / Other. | BUILT | Built with an older bucket list; new list is T-016. |
+| R-006 | Group the top markets live into topic buckets: Macro / Politics & Geopolitics / Tech & AI / Companies, Energy & Commodities / Other. | BUILT | New list built (T-016). Keyword rules in `BUCKETS`; checked on live Polymarket and Kalshi data in Node, not yet on a phone. |
 | R-007 | Exclude crypto and sports markets. | BUILT | Keyword regex `SKIP`. May miss odd titles (see T-007). |
 | R-008 | Pin markets so they stay on top and never vanish. | BUILT | Stored in the browser (localStorage). Refreshed by direct lookup even if they leave the top N. |
 | R-009 | Phone first: works as a home-screen web app. | BUILT | No icon/manifest yet (T-003). |
