@@ -109,6 +109,7 @@ label{display:block;font-size:13.5px;color:var(--ink-2);margin:14px 0 4px}
 select,input[type="text"]{width:100%;height:44px;padding:0 10px;font-size:16px;background:#fff;border:1px solid var(--rule);border-radius:3px}
 .pair{display:flex;gap:18px;justify-content:flex-end;margin-top:18px}
 .pair .link{font-size:15px}
+.syncrow{margin-top:8px}
 </style>
 </head>
 <body>
@@ -139,6 +140,9 @@ select,input[type="text"]{width:100%;height:44px;padding:0 10px;font-size:16px;b
   <select id="sSrc"><option value="both">Polymarket and Kalshi</option><option value="pm">Polymarket only</option><option value="ka">Kalshi only</option></select>
   <label for="sRelay">Kalshi relay URL (leave empty to use the built-in one)</label>
   <input id="sRelay" type="text" placeholder="https://your-worker.workers.dev" autocapitalize="off" autocorrect="off">
+  <label for="sSync">Sync code (type the same code on each device to share pins)</label>
+  <input id="sSync" type="text" placeholder="Empty: pins stay on this device" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <div class="status syncrow"><button class="link" id="sNew" type="button">New code</button><span id="syncMsg"></span></div>
   <div class="pair"><button class="link" id="sCancel" type="button">Cancel</button><button class="link" id="sSave" type="button">Save</button></div>
 </dialog>
 
@@ -278,6 +282,58 @@ async function oneKA(t){
   }
   const e = kaList && kaList.events.find(x=>x.event_ticker===t);
   return e ? normKA(e) : null;
+}
+
+/* ---------- Pin sync (T-010) ----------
+   Only the ids of pinned markets (like "pm:some-slug") are saved, under a random sync code, in the
+   relay's KV store. Nothing personal. Merge: start from the saved list, add pins made on this device
+   since the last sync, drop pins removed on this device since the last sync. The first sync with a
+   code (base empty) is a plain union. The free KV plan allows 1000 writes a day, so writes wait 3s
+   and only happen when the list changed. */
+const PIN_ID = /^(pm|ka):[A-Za-z0-9._-]{1,150}$/;
+const normCode = s => String(s||"").toLowerCase().replace(/[\s-]+/g,"");
+const okCode = s => /^[a-z0-9]{16,64}$/.test(s);
+function newCode(){ const a = "abcdefghijkmnpqrstuvwxyz23456789", b = crypto.getRandomValues(new Uint8Array(20)); return [...b].map(x=>a[x&31]).join(""); } // 100 random bits
+let syncCode = load("sync",""), syncErr = "", syncing = false, syncAgain = false, syncTimer = 0;
+const syncBase = () => { try { const v = JSON.parse(load("syncBase","[]")); return new Set(Array.isArray(v) ? v : []); } catch { return new Set(); } };
+function syncState(){
+  if(!syncCode) return "Pins stay on this device.";
+  if(syncErr) return syncErr;
+  const at = load("syncAt","");
+  return at ? "Last synced "+new Date(at).toLocaleString([], {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "Not synced yet.";
+}
+function queueSync(){ if(!syncCode) return; clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 3000); }
+async function syncNow(){
+  if(!syncCode) return;
+  if(!kBase()){ syncErr = "Sync needs the relay."; $("syncMsg").textContent = syncState(); return; }
+  if(syncing){ syncAgain = true; return; }
+  syncing = true;
+  const url = `${kBase()}/sync/${syncCode}`;
+  try {
+    const remote = ((await getJSON(url)).ids || []).filter(id=>PIN_ID.test(id));
+    const base = syncBase(), had = Object.keys(pins);
+    const ids = [...new Set([...remote, ...had.filter(id=>!base.has(id) && PIN_ID.test(id))])]
+      .filter(id=>!(base.has(id) && !pins[id])).slice(0,200);
+    for(const id of had) if(base.has(id) && !remote.includes(id)) delete pins[id]; // unpinned on another device
+    await Promise.all(ids.filter(id=>!pins[id]).map(async id=>{ // pinned on another device: load it like any pinned market
+      try { const u = id.startsWith("pm:") ? await onePM(id.slice(3)) : await oneKA(id.slice(3)); if(u) pins[id] = u; } catch {}
+    }));
+    save("pins", JSON.stringify(pins));
+    if(ids.join() !== remote.join()){
+      const r = await fetch(url, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ids})});
+      if(!r.ok) throw new Error("HTTP "+r.status);
+    }
+    // markets that could not load stay in the saved list and are tried again next time
+    save("syncBase", JSON.stringify(Object.keys(pins).filter(id=>ids.includes(id))));
+    save("syncAt", new Date().toISOString()); syncErr = "";
+    if(Object.keys(pins).sort().join() !== had.sort().join()){ render(); refresh(); }
+  } catch(err){
+    const m = String(err && err.message || "failed");
+    syncErr = m.includes("503") ? "Sync is not switched on in the relay yet." : "Sync failed ("+m+"). It will try again.";
+  } finally {
+    syncing = false; $("syncMsg").textContent = syncState();
+    if(syncAgain){ syncAgain = false; queueSync(); }
+  }
 }
 
 /* ---------- Refresh ---------- */
@@ -491,7 +547,7 @@ document.addEventListener("click", e=>{
   const s = e.target.closest("[data-pin]");
   if(s){ const it = lookup(s.dataset.pin) || (cur && cur.id===s.dataset.pin ? cur : null); if(!it) return;
     if(pins[it.id]) delete pins[it.id]; else pins[it.id] = it;
-    save("pins", JSON.stringify(pins));
+    save("pins", JSON.stringify(pins)); queueSync();
     if(cur) paintOutcomes();
     if(!pins[it.id]) refresh(); else { feed = feed.filter(i=>i.id!==it.id); render(); }
     return; }
@@ -502,18 +558,23 @@ document.addEventListener("click", e=>{
 });
 $("back").addEventListener("click", e=>{ e.preventDefault(); location.hash = ""; });
 $("refresh").onclick = refresh;
-$("gear").onclick = ()=>{ $("sTop").value=cfg.top; $("sRank").value=cfg.rank; $("sSrc").value=cfg.src; $("sRelay").value=cfg.relay; $("dlg").showModal(); };
+$("gear").onclick = ()=>{ $("sTop").value=cfg.top; $("sRank").value=cfg.rank; $("sSrc").value=cfg.src; $("sRelay").value=cfg.relay;
+  $("sSync").value=syncCode; $("syncMsg").textContent=syncState(); $("dlg").showModal(); };
+$("sNew").onclick = ()=>{ $("sSync").value = newCode(); $("syncMsg").textContent = "Tap Save, then type this code on your other device."; };
 $("sCancel").onclick = ()=>$("dlg").close();
 $("sSave").onclick = ()=>{
+  const code = normCode($("sSync").value);
+  if(code && !okCode(code)){ $("syncMsg").textContent = "A sync code is 16 to 64 letters and digits."; return; }
+  if(code!==syncCode){ syncCode = code; syncErr = ""; save("sync", code); save("syncBase","[]"); save("syncAt",""); }
   cfg = {top:+$("sTop").value, rank:$("sRank").value, src:$("sSrc").value, relay:$("sRelay").value.trim()};
   for(const k in cfg) save(k, cfg[k]);
-  $("dlg").close(); refresh();
+  $("dlg").close(); refresh().then(syncNow);
 };
 addEventListener("hashchange", route);
 addEventListener("resize", draw);
-document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) refresh(); });
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) refresh().then(syncNow); });
 setInterval(()=>{ if(!document.hidden) refresh(); }, REFRESH_MS);
-render(); route(); refresh();
+render(); route(); refresh().then(syncNow);
 </script>
 </body>
 </html>

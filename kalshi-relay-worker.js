@@ -12,6 +12,11 @@
 //   /kalshi/events?tickers=A,B,C   live data for up to 120 events
 //   /kalshi/event/<TICKER>         one event (used for pinned markets)
 //   /kalshi/history?series=S&ticker=T&r=1d|1w|1m|max   price history for one market, as [[unix_seconds, yes_price_0_to_1], ...]
+// Pin sync (T-010), GET and PUT:
+//   /sync/<CODE>                   the list of pinned market ids saved under a random sync code, as {"ids":[...],"updated":...}
+//   Stored in a Workers KV namespace bound to this Worker as SYNC (docs/CLOUDFLARE_SETUP.md). Only market ids
+//   like "pm:some-slug" or "ka:TICKER" are accepted: no names, emails or anything personal. Without the
+//   binding, /sync answers 503 and everything else still works.
 // Only the app's own site may call it from a browser (ALLOWED_ORIGIN below).
 
 const KALSHI = "https://api.elections.kalshi.com/trade-api/v2";
@@ -23,6 +28,9 @@ const MKEYS = ["ticker", "status", "yes_sub_title", "subtitle", "title", "yes_bi
   "last_price_dollars", "previous_price_dollars", "volume_24h_fp", "open_interest_fp", "close_time", "expiration_time"];
 const RANGE = { "1d": [86400, 1], "1w": [604800, 60], "1m": [2592000, 60], "max": [63072000, 1440] }; // seconds back, minutes per point
 const cache = new Map();    // key -> {t, body}; a convenience only, safe to lose
+const SYNC_CODE = /^[a-z0-9]{16,64}$/, PIN_ID = /^(pm|ka):[A-Za-z0-9._-]{1,150}$/;
+const MAX_SYNC_BYTES = 8192, MAX_PINS = 200; // free KV plan: 1000 writes a day, so keep it small; the app only writes on change
+const SYNC_METHODS = "GET, PUT, OPTIONS";
 
 async function kget(path) {
   const r = await fetch(KALSHI + path, { headers: { Accept: "application/json" } });
@@ -40,24 +48,55 @@ function slimEvent(e, markets) {
 function remember(key, body) { if (cache.size > 300) cache.clear(); cache.set(key, { t: Date.now(), body }); return body; }
 const fresh = key => { const c = cache.get(key); return c && Date.now() - c.t < CACHE_MS ? c.body : null; };
 
-function headers(origin, extra) {
+function headers(origin, extra, methods) {
   const h = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=15", Vary: "Origin", ...extra };
-  if (origin === ALLOWED_ORIGIN) { h["Access-Control-Allow-Origin"] = ALLOWED_ORIGIN; h["Access-Control-Allow-Methods"] = "GET, OPTIONS"; }
+  if (origin === ALLOWED_ORIGIN) {
+    h["Access-Control-Allow-Origin"] = ALLOWED_ORIGIN; h["Access-Control-Allow-Methods"] = methods || "GET, OPTIONS";
+    h["Access-Control-Allow-Headers"] = "Content-Type";
+  }
   return h;
 }
-const send = (origin, status, obj) => new Response(JSON.stringify(obj), { status, headers: headers(origin) });
+const send = (origin, status, obj, extra, methods) => new Response(JSON.stringify(obj), { status, headers: headers(origin, extra, methods) });
+
+async function sync(request, env, origin, code) {
+  const out = (status, obj) => send(origin, status, obj, { "Cache-Control": "no-store" }, SYNC_METHODS);
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: headers(origin, { "Access-Control-Max-Age": "86400" }, SYNC_METHODS) });
+  if (request.method !== "GET" && request.method !== "PUT") return out(405, { error: "GET or PUT only" });
+  if (!SYNC_CODE.test(code)) return out(400, { error: "a sync code is 16 to 64 lowercase letters or digits" });
+  if (!env || !env.SYNC) return out(503, { error: "pin sync is not set up: this Worker has no KV binding named SYNC" });
+  const key = "pins:" + code;
+  if (request.method === "GET") {
+    const v = await env.SYNC.get(key, "json");
+    return out(200, v && Array.isArray(v.ids) ? v : { ids: [], updated: null });
+  }
+  if (+(request.headers.get("Content-Length") || 0) > MAX_SYNC_BYTES) return out(413, { error: "too big" });
+  const text = await request.text();
+  if (new TextEncoder().encode(text).length > MAX_SYNC_BYTES) return out(413, { error: "too big" });
+  let d; try { d = JSON.parse(text); } catch { d = null; }
+  const ids = d && Array.isArray(d.ids) ? d.ids : null;
+  if (!ids || ids.length > MAX_PINS || !ids.every(x => typeof x === "string" && PIN_ID.test(x)))
+    return out(400, { error: 'send {"ids":["pm:slug","ka:TICKER",...]}, at most ' + MAX_PINS });
+  const v = { ids: [...new Set(ids)], updated: new Date().toISOString() };
+  await env.SYNC.put(key, JSON.stringify(v));
+  return out(200, v);
+}
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const origin = request.headers.get("Origin");
     // Browsers send an Origin header on cross-site calls. Refuse any site other than the app.
     // Opening a URL directly in the address bar sends none, so Om can still check it by hand.
     if (origin && origin !== ALLOWED_ORIGIN) return send(null, 403, { error: "origin not allowed" });
+    const url = new URL(request.url);
+    const path = url.pathname.replace(/\/+$/, "");
+    const sc = path.match(/^\/sync\/([^/]*)$/);
+    if (sc) {
+      try { return await sync(request, env, origin, sc[1]); }
+      catch (e) { return send(origin, 502, { error: "sync storage failed: " + String(e.message || "unknown") }, { "Cache-Control": "no-store" }, SYNC_METHODS); }
+    }
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: headers(origin, { "Access-Control-Max-Age": "86400" }) });
     if (request.method !== "GET") return send(origin, 405, { error: "GET only" });
 
-    const url = new URL(request.url);
-    const path = url.pathname.replace(/\/+$/, "");
     try {
       if (path === "/kalshi/events") {
         const tickers = [...new Set((url.searchParams.get("tickers") || "").split(",").map(s => s.trim().toUpperCase()).filter(s => TICKER.test(s)))].slice(0, MAX_TICKERS);
@@ -101,7 +140,7 @@ export default {
         const ev = slimEvent(d.event, (d.event.markets && d.event.markets.length) ? d.event.markets : d.markets);
         return send(origin, 200, remember(key, { event: ev }));
       }
-      return send(origin, 404, { error: "use /kalshi/events?tickers=..., /kalshi/event/<ticker> or /kalshi/history?series=..&ticker=..&r=1w" });
+      return send(origin, 404, { error: "use /kalshi/events?tickers=..., /kalshi/event/<ticker> or /kalshi/history?series=..&ticker=..&r=1w or /sync/<code>" });
     } catch (e) {
       return send(origin, e.status === 404 ? 404 : 502, { error: String(e.message || "failed") });
     }
