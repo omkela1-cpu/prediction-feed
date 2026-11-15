@@ -15,7 +15,7 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 | R-009 | Phone first: works as a home-screen web app. | BUILT | No icon/manifest yet (T-003). |
 | R-010 | Each market shows top outcomes with % price, 24h volume, liquidity/OI, days to end, source and bucket, and links to the original page. | BUILT | |
 | R-011 | If one source fails, show a warning and keep showing the other. | BUILT | |
-| R-012 | Works if Kalshi blocks browsers, via an optional relay URL in Settings. | BUILT | Relay in `kalshi-relay-worker.js`, untested. |
+| R-012 | Works if Kalshi blocks browsers, via an optional relay URL in Settings. | BUILT | Relay in `kalshi-relay-worker.js` (`/kalshi/top`, `/kalshi/event/<ticker>`), URL set in `KALSHI_RELAY_URL` or Settings. Tested in Node against live Kalshi; not yet deployed or checked on a phone (T-014, T-015). |
 | R-013 | Free hosting, no secrets. Only backend allowed: one free Cloudflare Worker (Kalshi relay, pin sync). | BUILT | GitHub Pages. Worker not deployed yet. |
 | R-014 | Reasonable mobile data use. | BUILT | 3 Polymarket pages per refresh (gzip). See T-008. |
 | R-015 | Movers section: biggest 24h price moves among liquid markets. | OPEN | T-017 |
