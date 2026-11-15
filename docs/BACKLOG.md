@@ -5,7 +5,7 @@ Agents: only build `TODO` items, top to bottom. Add your own ideas as `PROPOSED`
 
 | ID | Phase | Task | Status | Owner | Req | Notes / done when |
 |----|-------|------|--------|-------|-----|-------------------|
-| T-002 | 0 | Switch on GitHub Pages and confirm the app loads on a phone. | TODO | Om | R-013 | Settings > Pages > main / root. |
+| T-002 | 0 | Switch on GitHub Pages and confirm the app loads on a phone. | DONE | Om | R-013 | Pages on, per Om: https://omkela1-cpu.github.io/prediction-feed/ . Phone check of pins still to do. |
 | T-001 | 1 | Verify Kalshi API. | DONE | Claude | R-002 | Works server to server; field names match `normKA`. Returns 403 when a browser `Origin` header is sent, so the relay is needed. Real-phone confirmation moves to T-015. |
 | T-013 | 1 | Upgrade the Worker: `/kalshi/top` (page through open events, rank by 24h volume, cache about 60s), `/kalshi/event/<ticker>`, GET only, allow only the app's origin. | TODO | | R-012 | Kalshi events are not volume-sorted, so ranking happens in the Worker. Update `fetchKA` / `oneKA` to match. |
 | T-014 | 1 | Create a free Cloudflare account and deploy the Worker. Share the Worker URL. | TODO | Om | R-012 | Agent writes step-by-step instructions first. |
