@@ -19,10 +19,11 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 | R-013 | Free hosting, no secrets. Only backend allowed: one free Cloudflare Worker (Kalshi relay, pin sync). | BUILT | GitHub Pages. Worker not deployed yet. |
 | R-014 | Reasonable mobile data use. | BUILT | 3 Polymarket pages per refresh (gzip). See T-008. |
 | R-015 | Movers section: biggest 24h price moves among liquid markets. | OPEN | T-017 |
-| R-016 | Market detail screen with a scrubbable price chart (drag to read price and time; 1D / 1W / 1M / All), plus sparklines on cards. | OPEN | T-018, T-012, T-019, T-020. Web app, no native app needed. |
+| R-016 | Market detail screen with a scrubbable price chart (drag to read price and time; 1D / 1W / 1M / All), plus sparklines on cards. | BUILT | Polymarket detail screen and scrubbable chart built (T-018, T-012). Still open: Kalshi history (T-019), sparklines (T-020). Not yet checked on a real phone. |
 | R-017 | Search any market on either site and pin it to a watchlist. | OPEN | T-005, T-021 |
 | R-018 | Show Kalshi and Polymarket prices side by side for the same event, with the gap and a resolution-rules warning. | OPEN | T-022, T-023 |
 | R-019 | Pins sync across devices. | OPEN | T-010 |
+| R-020 | Visual style matches Om's Short Seller Feed: FT-like, light mode only, serif headlines, no badges, all-caps labels or filler text. | BUILT | T-026. Keep this style in all new screens. |
 
 ## Non-goals
 Trading, alerts that place orders, user accounts, paid APIs, a native iOS app (unless Om asks later).

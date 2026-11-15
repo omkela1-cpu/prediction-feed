@@ -33,4 +33,4 @@ New ideas go into `docs/BACKLOG.md` as `PROPOSED` with a new ID. Do not build `P
 - `kalshi-relay-worker.js`: the Cloudflare Worker. GET only, read-only. Routes `/kalshi/top` (ranked events) and `/kalshi/event/<ticker>`; only the app's origin may call it from a browser.
 
 ## Style
-Plain JavaScript, no frameworks. Escape all external text with `esc()` before putting it in HTML. Mobile first (phone screen).
+Plain JavaScript, no frameworks. Visual style is fixed by R-020 (FT-like, light only; use the CSS variables at the top of `index.html`, no badges, no all-caps labels, no filler text). Escape all external text with `esc()` before putting it in HTML. Mobile first (phone screen).

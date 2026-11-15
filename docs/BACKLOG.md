@@ -16,8 +16,8 @@ Agents: only build `TODO` items, top to bottom. Add your own ideas as `PROPOSED`
 | T-004 | 2 | Show price change since last refresh (green/red delta in points). | TODO | | R-005 | Classes `.up` / `.dn` exist. |
 | T-003 | 2 | Add `manifest.webmanifest` and an original app icon. | DONE | Claude | R-009 | Original icon (three bars and a rising line). Home screen install not yet checked on a phone. |
 | T-009 | 2 | Make volume comparable across sites (Kalshi contracts vs Polymarket dollars). | TODO | | R-003 | Record the method in DECISIONS. |
-| T-018 | 3 | Market detail screen: tap a card to see all outcomes and a chart area. | TODO | | R-016 | |
-| T-012 | 3 | Scrubbable price chart for Polymarket: drag to read price and time; ranges 1D / 1W / 1M / All. | TODO | | R-016 | Endpoint verified: `clob.polymarket.com/prices-history`, CORS open. Plain canvas, no chart library needed. |
+| T-018 | 3 | Market detail screen: tap a card to see all outcomes and a chart area. | DONE | Claude | R-016 | Tapping a headline opens the market inside the app (hash `#m=<id>`). Up to 12 outcomes; tap one to chart it. Tested in a phone-sized Chrome, not on a real phone. |
+| T-012 | 3 | Scrubbable price chart for Polymarket: drag to read price and time; ranges 1D / 1W / 1M / All. | DONE | Claude | R-016 | Plain canvas, pointer events, `clob.polymarket.com/prices-history`. Tested with a mouse drag in phone-sized Chrome; finger drag on a real phone NOT yet checked. |
 | T-019 | 3 | Kalshi price history through the Worker, same chart. | TODO | | R-016 | Verify the candlesticks endpoint first. |
 | T-020 | 3 | Small sparkline on each card. | TODO | | R-016 | Watch data use. |
 | T-005 | 4 | Search any market on either site. | TODO | | R-017 | Verify search endpoints and CORS first. Kalshi via Worker. |
@@ -27,6 +27,7 @@ Agents: only build `TODO` items, top to bottom. Add your own ideas as `PROPOSED`
 | T-010 | 6 | Sync pins and pairs across devices with a random sync code (Worker KV). | TODO | | R-019 | No personal data. |
 | T-011 | 7 | Test script for `normPM` / `normKA` on saved sample JSON. | TODO | | | |
 | T-008 | 7 | Reduce mobile data use. | TODO | | R-014 | |
+| T-026 | 2 | Redesign to match Om's Short Seller Feed (FT style): salmon paper, Newsreader serif headlines, Hanken Grotesk sans, light only, no badges or filler. | DONE | Claude | R-020 | Requested by Om 2026-11-15. Design tokens copied from his Short Seller Feed page. |
 | T-006 | | Make buckets editable in the app. | PROPOSED | | R-006 | |
 | T-024 | | Price alerts (notification when a pinned market moves). | PROPOSED | | | Likely needs a native app or web push. |
 | T-025 | | Faster, complete Kalshi ranking in the Worker. | PROPOSED | Grok | R-003 | Options for Om: (a) Cloudflare paid plan ($5 a month) so the Worker can read all ~100 pages every few minutes; (b) Workers KV plus a scheduled trigger so the ranking survives Worker restarts; (c) Kalshi's website search endpoint, which sorts by volume but is undocumented and may change; (d) added by Claude in review: a scheduled GitHub Actions job in this repo pages all Kalshi events every 10 to 15 minutes and publishes the top ~150 tickers as a small JSON file (for example on a `data` branch); the app reads that file, and the Worker only fetches live prices for those tickers (one Kalshi call, well inside the free plan). Free, no Worker state. To verify first: Kalshi answers GitHub's servers; schedule delays are acceptable. Needs Om's approval because it adds a second moving part. |
