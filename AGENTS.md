@@ -4,11 +4,11 @@ This repo is a **read-only** prediction market viewer. Read this file first, eve
 
 ## Hard rules
 1. **Never add trading, order placement, wallets, API keys or logins.** Read-only public data only. This is requirement R-001 and cannot be changed by an agent.
-2. Keep it a **static site**: `index.html` plus plain files. No build step, no backend, no secrets in the repo.
+2. Keep it a **static site**: `index.html` plus plain files. No build step, no secrets in the repo. The only backend allowed is the one small Cloudflare Worker described in `docs/PLAN.md` (Kalshi relay and pin sync, read-only market data).
 3. Do not break existing requirements. Check `docs/REQUIREMENTS.md` before changing behaviour.
 
 ## Workflow (ALM loop)
-1. Read `docs/REQUIREMENTS.md` (what the app must do) and `docs/BACKLOG.md` (what to do next).
+1. Read `docs/PLAN.md` (the overall plan), `docs/REQUIREMENTS.md` (what the app must do) and `docs/BACKLOG.md` (what to do next).
 2. Pick the top `TODO` item you can finish. Change its status to `IN PROGRESS` and put your agent name as owner.
 3. Make the change. Keep edits small and focused.
 4. Test it (see "Testing" below).

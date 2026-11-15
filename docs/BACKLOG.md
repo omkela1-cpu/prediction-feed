@@ -1,19 +1,31 @@
 # Backlog
 
 Statuses: `PROPOSED` (idea, owner has not approved) → `TODO` (approved, ready) → `IN PROGRESS` → `DONE` / `BLOCKED`.
-Agents: only build `TODO` items. Add your own ideas as `PROPOSED`.
+Agents: only build `TODO` items, top to bottom. Add your own ideas as `PROPOSED`. Phases are explained in `PLAN.md`.
 
-| ID | Task | Status | Owner | Req | Notes |
-|----|------|--------|-------|-----|-------|
-| T-001 | Verify Kalshi works from a real phone browser (CORS, response shape, price fields). If blocked, deploy the relay and document the URL. | TODO | | R-002, R-012 | Could not be tested from the build sandbox (403). Do not claim it works without seeing data. |
-| T-002 | Deploy to GitHub Pages and confirm the live URL loads on a phone. | TODO | Om | R-013 | Needs repo settings: Pages, branch main, root. |
-| T-003 | Add `manifest.webmanifest` and an app icon so "Add to Home Screen" looks right. | TODO | | R-009 | Original icon artwork only. |
-| T-004 | Show price change since last refresh (green/red arrow or delta in points). | TODO | | R-005 | CSS classes `.up` / `.dn` already exist. |
-| T-005 | Search box across the visible markets. | PROPOSED | | | |
-| T-006 | Make buckets editable in the UI instead of in code. | PROPOSED | | R-006 | |
-| T-007 | Improve crypto/sports exclusion using each site's tags and categories, not only keywords. | PROPOSED | | R-007 | |
-| T-008 | Reduce data use: fetch only the needed pages, or use lighter endpoints. | PROPOSED | | R-014 | |
-| T-009 | Treat Kalshi and Polymarket volume as comparable (Kalshi counts contracts, Polymarket counts USD). | PROPOSED | | R-003 | Roughly $1 per contract, so approximate for now. |
-| T-010 | Sync pins across devices without a backend (e.g. export/import code). | PROPOSED | | R-008 | |
-| T-011 | Add a small test script for `normPM` / `normKA` using saved sample JSON. | PROPOSED | | | |
-| T-012 | Sparkline of recent price history per market. | PROPOSED | | | Check endpoint availability and CORS first. |
+| ID | Phase | Task | Status | Owner | Req | Notes / done when |
+|----|-------|------|--------|-------|-----|-------------------|
+| T-002 | 0 | Switch on GitHub Pages and confirm the app loads on a phone. | TODO | Om | R-013 | Settings > Pages > main / root. |
+| T-001 | 1 | Verify Kalshi API. | DONE | Claude | R-002 | Works server to server; field names match `normKA`. Returns 403 when a browser `Origin` header is sent, so the relay is needed. Real-phone confirmation moves to T-015. |
+| T-013 | 1 | Upgrade the Worker: `/kalshi/top` (page through open events, rank by 24h volume, cache about 60s), `/kalshi/event/<ticker>`, GET only, allow only the app's origin. | TODO | | R-012 | Kalshi events are not volume-sorted, so ranking happens in the Worker. Update `fetchKA` / `oneKA` to match. |
+| T-014 | 1 | Create a free Cloudflare account and deploy the Worker. Share the Worker URL. | TODO | Om | R-012 | Agent writes step-by-step instructions first. |
+| T-015 | 1 | Make the Worker URL the app default. Confirm Kalshi on a phone against kalshi.com for 3 markets. | TODO | | R-002 | Blocked until T-014. |
+| T-016 | 2 | Change buckets to: Macro / Politics & Geopolitics / Tech & AI / Companies, Energy & Commodities / Other. | TODO | | R-006 | |
+| T-007 | 2 | Exclude crypto and sports using each site's tags and categories, not only keywords. | TODO | | R-007 | |
+| T-017 | 2 | Movers section: biggest 24h price change among liquid markets. | TODO | | R-015 | Kalshi: `previous_price_dollars`. Polymarket: check for a 1-day change field, else compute from history. |
+| T-004 | 2 | Show price change since last refresh (green/red delta in points). | TODO | | R-005 | Classes `.up` / `.dn` exist. |
+| T-003 | 2 | Add `manifest.webmanifest` and an original app icon. | TODO | | R-009 | No copied logos. |
+| T-009 | 2 | Make volume comparable across sites (Kalshi contracts vs Polymarket dollars). | TODO | | R-003 | Record the method in DECISIONS. |
+| T-018 | 3 | Market detail screen: tap a card to see all outcomes and a chart area. | TODO | | R-016 | |
+| T-012 | 3 | Scrubbable price chart for Polymarket: drag to read price and time; ranges 1D / 1W / 1M / All. | TODO | | R-016 | Endpoint verified: `clob.polymarket.com/prices-history`, CORS open. Plain canvas, no chart library needed. |
+| T-019 | 3 | Kalshi price history through the Worker, same chart. | TODO | | R-016 | Verify the candlesticks endpoint first. |
+| T-020 | 3 | Small sparkline on each card. | TODO | | R-016 | Watch data use. |
+| T-005 | 4 | Search any market on either site. | TODO | | R-017 | Verify search endpoints and CORS first. Kalshi via Worker. |
+| T-021 | 4 | Pin from search results, so the watchlist can include markets outside the top 20. | TODO | | R-017 | |
+| T-022 | 5 | Cross-site pairs: suggest likely matches, Om confirms, store confirmed pairs. | TODO | | R-018 | |
+| T-023 | 5 | Show both prices and the gap for confirmed pairs, with a resolution-rules warning. | TODO | | R-018 | |
+| T-010 | 6 | Sync pins and pairs across devices with a random sync code (Worker KV). | TODO | | R-019 | No personal data. |
+| T-011 | 7 | Test script for `normPM` / `normKA` on saved sample JSON. | TODO | | | |
+| T-008 | 7 | Reduce mobile data use. | TODO | | R-014 | |
+| T-006 | | Make buckets editable in the app. | PROPOSED | | R-006 | |
+| T-024 | | Price alerts (notification when a pinned market moves). | PROPOSED | | | Likely needs a native app or web push. |
