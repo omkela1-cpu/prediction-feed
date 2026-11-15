@@ -30,7 +30,8 @@ New ideas go into `docs/BACKLOG.md` as `PROPOSED` with a new ID. Do not build `P
   - `normPM` / `normKA`: turn each site's data into one common item shape.
   - `refresh()`: fetches, merges, ranks, updates pins.
   - `render()` / `card()`: UI.
-- `kalshi-relay-worker.js`: the Cloudflare Worker. GET only, read-only. Routes `/kalshi/top` (ranked events) and `/kalshi/event/<ticker>`; only the app's origin may call it from a browser.
+- `scripts/kalshi-top.mjs` + `.github/workflows/kalshi-top.yml`: every 10 minutes, read all open Kalshi events, rank by 24h volume, publish the top 150 to `kalshi-top.json` on the `data` branch. The app reads that file (`hotList()` in `index.html`).
+- `kalshi-relay-worker.js`: the Cloudflare Worker. GET only, read-only. Routes `/kalshi/events?tickers=A,B,C` (live prices for the hot list) and `/kalshi/event/<ticker>`; only the app's origin may call it from a browser. It no longer ranks anything.
 
 ## Style
 Plain JavaScript, no frameworks. Visual style is fixed by R-020 (FT-like, light only; use the CSS variables at the top of `index.html`, no badges, no all-caps labels, no filler text). Escape all external text with `esc()` before putting it in HTML. Mobile first (phone screen).

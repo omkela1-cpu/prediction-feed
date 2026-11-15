@@ -1,0 +1,32 @@
+# Rebuilds the Kalshi hot list every 10 minutes and publishes it on the "data" branch as
+# kalshi-top.json. The app reads that file. Read-only public data; no secrets are used.
+name: Kalshi hot list
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: kalshi-top
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Read Kalshi and rank by 24h volume
+        run: node scripts/kalshi-top.mjs out/kalshi-top.json
+      - name: Publish to the data branch
+        run: |
+          cd out
+          git init -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add kalshi-top.json
+          git commit -q -m "Kalshi hot list $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" data

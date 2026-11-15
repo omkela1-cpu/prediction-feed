@@ -155,10 +155,10 @@ const OTHER = "Other";
 /* --------------------------------------- */
 
 const PM = "https://gamma-api.polymarket.com/events";
-/* Kalshi relay: Kalshi blocks browsers, so Kalshi data comes through our Cloudflare Worker.
+/* Kalshi relay: Kalshi blocks browsers, so live Kalshi prices come through our Cloudflare Worker.
    After deploying it (docs/CLOUDFLARE_SETUP.md), paste its URL between the quotes,
-   e.g. "https://prediction-feed-relay.yourname.workers.dev". Leave "" until then: the app
-   then shows Polymarket only. Settings > "Kalshi relay URL" overrides this on one phone. */
+   e.g. "https://prediction-feed-relay.yourname.workers.dev". While it is "", Kalshi markets still
+   show, with prices up to about 15 minutes old. Settings > "Kalshi relay URL" overrides this on one phone. */
 const KALSHI_RELAY_URL = "";
 const NO_RELAY = "no relay";
 const REFRESH_MS = 60000;
@@ -235,21 +235,41 @@ function normKA(e, markets){
   const text = e.title+" "+(e.category||"");
   return {src:"ka", id:"ka:"+e.event_ticker, ref:e.event_ticker, title:e.title, topic:bucketOf(e.title, e.category),
     skip:SKIP.test(text) || /^sports$/i.test(e.category||""), outcomes, all,
-    vol24:ms.reduce((s,m)=>s+num(m,"volume_24h"),0), liq:ms.reduce((s,m)=>s+num(m,"open_interest"),0),
+    vol24:e.vol24_total!=null ? +e.vol24_total : ms.reduce((s,m)=>s+num(m,"volume_24h"),0),
+    liq:e.oi_total!=null ? +e.oi_total : ms.reduce((s,m)=>s+num(m,"open_interest"),0),
     end:ms[0].close_time||ms[0].expiration_time, url:"https://kalshi.com/events/"+(e.event_ticker||"").toLowerCase()};
 }
 const kBase = () => ((cfg.relay||"").trim() || KALSHI_RELAY_URL).replace(/\/+$/,"");
+/* Which Kalshi events are hot comes from a file a scheduled GitHub job rebuilds every 10 minutes
+   (scripts/kalshi-top.mjs, published on the "data" branch). With the relay set up, prices for those
+   events are then fetched live; without it, the app shows the prices saved in that file. */
+const KALSHI_LIST_URL = "https://raw.githubusercontent.com/omkela1-cpu/prediction-feed/data/kalshi-top.json";
+let kaList = null, kaListAt = 0, kaInfo = {live:false, updated:null, relay:false};
+async function hotList(){
+  if(kaList && Date.now()-kaListAt < 240000) return kaList;
+  const d = await getJSON(KALSHI_LIST_URL);
+  if(!d || !Array.isArray(d.events)) throw new Error("hot list missing");
+  kaList = d; kaListAt = Date.now(); return d;
+}
 async function fetchKA(){
-  if(!kBase()) throw new Error(NO_RELAY);
-  const d = await getJSON(`${kBase()}/kalshi/top?limit=100`);
-  return (d.events||[]).map(e=>normKA(e)).filter(Boolean);
+  const list = await hotList();
+  let events = list.events, live = false;
+  if(kBase()){
+    try {
+      const d = await getJSON(`${kBase()}/kalshi/events?tickers=${list.events.slice(0,100).map(e=>encodeURIComponent(e.event_ticker)).join(",")}`);
+      if(d.events && d.events.length){ events = d.events; live = true; }
+    } catch {}
+  }
+  kaInfo = {live, updated:list.updated, relay:!!kBase()};
+  return events.map(e=>normKA(e)).filter(Boolean);
 }
 async function oneKA(t){
-  if(!kBase()) return null;
-  const d = await getJSON(`${kBase()}/kalshi/event/${encodeURIComponent(t)}`);
-  return d.event ? normKA(d.event, d.event.markets) : null;
+  if(kBase()){
+    try { const d = await getJSON(`${kBase()}/kalshi/event/${encodeURIComponent(t)}`); if(d.event) return normKA(d.event, d.event.markets); } catch {}
+  }
+  const e = kaList && kaList.events.find(x=>x.event_ticker===t);
+  return e ? normKA(e) : null;
 }
-
 
 /* ---------- Refresh ---------- */
 let busy=false;
@@ -306,8 +326,11 @@ function item(it, rank){
 function notes(){
   let html = "";
   for(const s of ["pm","ka"]) if(String(srcState[s]).startsWith("err"))
-    html += `<div class="notice bad">${SRC[s]} is unavailable (${esc(srcState[s].slice(5))}).${s==="ka"?" Check the Kalshi relay URL in Settings.":""}</div>`;
-  if(srcState.ka==="norelay") html += `<div class="notice">Kalshi is off until its relay is set up. Showing Polymarket only.</div>`;
+    html += `<div class="notice bad">${SRC[s]} is unavailable (${esc(srcState[s].slice(5))}).${s==="ka"?" The Kalshi hot list could not be read.":""}</div>`;
+  if(srcState.ka==="ok" && !kaInfo.live && kaInfo.updated){
+    const at = new Date(kaInfo.updated).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+    html += `<div class="notice">Kalshi prices are as of ${esc(at)}${kaInfo.relay ? " because the relay did not answer." : ". They become live once the relay is set up."}</div>`;
+  }
   $("notes").innerHTML = html;
 }
 function render(){
@@ -397,7 +420,7 @@ function endScrub(){ if(hover<0) return; hover = -1; draw(); paintRead(); }
 async function loadChart(){
   const o = (cur.all||cur.outcomes)[sel], seq = ++histSeq, msg = $("cmsg");
   pts = []; hover = -1; draw(); paintRead();
-  if(cur.src!=="pm"){ msg.textContent = "Price history for Kalshi markets arrives with the relay."; return; }
+  if(cur.src!=="pm"){ msg.textContent = "Charts for Kalshi markets are not built yet."; return; }
   if(!o || !o.tok){ msg.textContent = "No price history for this outcome."; return; }
   msg.textContent = "Loading price history";
   try {
