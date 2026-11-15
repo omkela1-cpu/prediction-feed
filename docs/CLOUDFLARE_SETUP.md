@@ -29,20 +29,20 @@ Plain steps for Om to put the Kalshi relay online. It takes about 10 minutes. A 
 5. Click **Deploy** (top right), and confirm if asked.
 
 ## 4. Check it works
-1. Copy your Worker address from step 2 and add `/kalshi/top?limit=5` to the end, for example:
-   `https://prediction-feed-relay.YOURNAME.workers.dev/kalshi/top?limit=5`
+1. Copy your Worker address from step 2 and add `/kalshi/event/KXELONMARS-99` to the end, for example:
+   `https://prediction-feed-relay.YOURNAME.workers.dev/kalshi/event/KXELONMARS-99`
 2. Open that in a browser. The first time can take a few seconds.
-3. Good result: a page of text that starts with `{"events":[` and lists Kalshi markets.
+3. Good result: a page of text that starts with `{"event":{` and mentions Elon Musk and Mars.
 4. Bad result: an error page. Note what it says (see "If something goes wrong" below).
 
-Note: the list is not complete straight away. Kalshi has about 20,000 open events, so the relay reads a slice each minute while the app is open. After about 100 minutes of use it has seen them all. The `seen` number near the end of that page shows how many it has found so far.
+Note: the relay does not choose which markets are hot. A scheduled GitHub job does that every 10 minutes (see `scripts/kalshi-top.mjs`). The relay only supplies live prices for them.
 
 ## 5. Try it in the app (this phone only)
 1. Open the app: https://omkela1-cpu.github.io/prediction-feed/
 2. Tap the gear (Settings).
-3. In **Kalshi relay URL**, paste your Worker address only, without `/kalshi/top`, for example
+3. In **Kalshi relay URL**, paste your Worker address only, without any path after `.workers.dev`, for example
    `https://prediction-feed-relay.YOURNAME.workers.dev`
-4. Tap **Save**. Kalshi markets (green "Kalshi" badge) should start to appear.
+4. Tap **Save**. Kalshi markets are already in the app from the hot list; after saving, their prices should become live and the note about older prices disappears.
 
 ## 6. Make it the default for every device
 Settings only changes one phone. To make it permanent, send the Worker address to the coding agent (that is backlog item T-015), or do it yourself on GitHub:
