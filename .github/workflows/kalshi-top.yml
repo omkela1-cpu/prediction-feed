@@ -1,9 +1,9 @@
-# Rebuilds the Kalshi hot list every 10 minutes and publishes it on the "data" branch as
+# Rebuilds the Kalshi hot list every hour and publishes it on the "data" branch as
 # kalshi-top.json. The app reads that file. Read-only public data; no secrets are used.
 name: Kalshi hot list
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
 permissions:
   contents: write
@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

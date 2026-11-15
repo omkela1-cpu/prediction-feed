@@ -35,7 +35,7 @@ Plain steps for Om to put the Kalshi relay online. It takes about 10 minutes. A 
 3. Good result: a page of text that starts with `{"event":{` and mentions Elon Musk and Mars.
 4. Bad result: an error page. Note what it says (see "If something goes wrong" below).
 
-Note: the relay does not choose which markets are hot. A scheduled GitHub job does that every 10 minutes (see `scripts/kalshi-top.mjs`). The relay only supplies live prices for them.
+Note: the relay does not choose which markets are hot. A scheduled GitHub job does that every hour (see `scripts/kalshi-top.mjs`). The relay only supplies live prices for them.
 
 ## 5. Try it in the app (this phone only)
 1. Open the app: https://omkela1-cpu.github.io/prediction-feed/

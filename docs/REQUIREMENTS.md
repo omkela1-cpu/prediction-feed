@@ -6,9 +6,9 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 |----|-------------|--------|-------|
 | R-001 | Read-only. No orders, trading, wallets, keys or logins. | MET | Public endpoints only. Cannot be changed by an agent. |
 | R-002 | Pull markets from Polymarket and Kalshi. | BUILT | Polymarket verified on live data. Kalshi hot list built by a scheduled GitHub job (T-025); live prices need the relay (T-014, T-015). Not yet checked on a phone. |
-| R-003 | Show the top N highest-volume markets (default 20) across both sites. | BUILT | Ranked by 24h volume. Setting for 10/20/30/50. |
+| R-003 | Show the top N highest-volume markets (default 20) across both sites. | BUILT | Ranked by 24h volume in cash for both sites (Kalshi priced from trades, T-009). Setting for 10/20/30/50. |
 | R-004 | Optionally rank by liquidity (Polymarket) / open interest (Kalshi). | BUILT | Settings. |
-| R-005 | Live prices: auto refresh and refresh on returning to the app. | BUILT | Every 60s while visible. |
+| R-005 | Live prices: auto refresh and refresh on returning to the app. | BUILT | Every 60s while visible. Cards also show the 24h change (T-004). |
 | R-006 | Group the top markets live into topic buckets: Macro / Politics & Geopolitics / Tech & AI / Companies, Energy & Commodities / Other. | BUILT | New list built (T-016). Keyword rules in `BUCKETS`; checked on live Polymarket and Kalshi data in Node, not yet on a phone. |
 | R-007 | Exclude crypto and sports markets. | BUILT | Keyword regex `SKIP`. May miss odd titles (see T-007). |
 | R-008 | Pin markets so they stay on top and never vanish. | BUILT | Stored in the browser (localStorage). Refreshed by direct lookup even if they leave the top N. |
@@ -21,7 +21,7 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 | R-015 | Movers section: biggest 24h price moves among liquid markets. | OPEN | T-017 |
 | R-016 | Market detail screen with a scrubbable price chart (drag to read price and time; 1D / 1W / 1M / All), plus sparklines on cards. | BUILT | Polymarket detail screen and scrubbable chart built (T-018, T-012). Still open: Kalshi history (T-019), sparklines (T-020). Not yet checked on a real phone. |
 | R-017 | Search any market on either site and pin it to a watchlist. | OPEN | T-005, T-021 |
-| R-018 | Show Kalshi and Polymarket prices side by side for the same event, with the gap and a resolution-rules warning. | OPEN | T-022, T-023 |
+| R-018 | Show Kalshi and Polymarket prices side by side for the same event, with the gap and a resolution-rules warning. | DROPPED | Om 2026-11-15: markets are rarely like for like. T-022, T-023 dropped. |
 | R-019 | Pins sync across devices. | OPEN | T-010 |
 | R-020 | Visual style matches Om's Short Seller Feed: FT-like, light mode only, serif headlines, no badges, all-caps labels or filler text. | BUILT | T-026. Keep this style in all new screens. |
 

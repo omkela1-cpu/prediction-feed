@@ -185,6 +185,7 @@ let feed = [], pinned = [], active = "All", srcState = {pm:"…", ka:"…"}, byI
 
 function money(n){ n=+n||0; const f=(v,u)=>"$"+(v>=100?Math.round(v):v.toFixed(1))+u;
   if(n>=1e9)return f(n/1e9,"bn"); if(n>=1e6)return f(n/1e6,"m"); if(n>=1e3)return "$"+Math.round(n/1e3)+"k"; return "$"+Math.round(n); }
+function compact(n){ n=+n||0; return n>=1e6 ? (n/1e6).toFixed(1)+"m" : n>=1e3 ? Math.round(n/1e3)+"k" : String(Math.round(n)); }
 function pct(p){ const v=p*100; return (v>0&&v<1 ? "<1" : v>99&&v<100 ? ">99" : Math.round(v))+"%"; }
 function json(s){ try { return typeof s==="string" ? JSON.parse(s) : (s||[]); } catch { return []; } }
 async function getJSON(url){
@@ -201,9 +202,10 @@ function normPM(e){
   let all; // every outcome with its price and the token id used for price history
   if(ms.length===1){
     const p = json(ms[0].outcomePrices).map(Number), o = json(ms[0].outcomes), tk = json(ms[0].clobTokenIds);
-    all = o.map((n,i)=>({name:n,p:p[i],tok:tk[i]}));
+    const c = Number(ms[0].oneDayPriceChange); // change of the first outcome; the other side of a two-way market moves the opposite way
+    all = o.map((n,i)=>({name:n,p:p[i],tok:tk[i], d1: i===0 ? c : -c}));
   } else {
-    all = ms.map(m=>({name:m.groupItemTitle||m.question, p:Number(json(m.outcomePrices)[0]), tok:json(m.clobTokenIds)[0]}));
+    all = ms.map(m=>({name:m.groupItemTitle||m.question, p:Number(json(m.outcomePrices)[0]), tok:json(m.clobTokenIds)[0], d1:Number(m.oneDayPriceChange)}));
   }
   all = all.filter(x=>isFinite(x.p)).sort((a,b)=>b.p-a.p).slice(0,12);
   if(!all.length) return null;
@@ -227,22 +229,24 @@ function kPrice(m){
   if(isFinite(b)&&isFinite(a)&&a>0&&(a-b)<=0.1) return (a+b)/2;
   return isFinite(l)&&l>0 ? l : (isFinite(a)&&a>0 ? a : b);
 }
+function d1K(m){ const l=cents(m,"last_price"), v=cents(m,"previous_price"); return isFinite(l)&&isFinite(v)&&v>0 ? l-v : NaN; } // previous_price is the price 24 hours ago
 function normKA(e, markets){
   const ms = (markets||e.markets||[]).filter(m=>(m.status||"active")==="active" || m.status==="cur");
   if(!ms.length) return null;
-  const all = ms.map(m=>({name:m.yes_sub_title||m.subtitle||(ms.length===1?"Yes":m.title), p:kPrice(m), tk:m.ticker}))
+  const all = ms.map(m=>({name:m.yes_sub_title||m.subtitle||(ms.length===1?"Yes":m.title), p:kPrice(m), tk:m.ticker, d1:d1K(m)}))
     .filter(x=>isFinite(x.p)).sort((a,b)=>b.p-a.p).slice(0,12);
   if(!all.length) return null;
   const outcomes = all.slice(0,3);
   const text = e.title+" "+(e.category||"");
   return {src:"ka", id:"ka:"+e.event_ticker, ref:e.event_ticker, title:e.title, series:e.series_ticker, topic:bucketOf(e.title, e.category),
     skip:SKIP.test(text) || /^sports$/i.test(e.category||""), outcomes, all,
-    vol24:e.vol24_total!=null ? +e.vol24_total : ms.reduce((s,m)=>s+num(m,"volume_24h"),0),
+    // usd24_total (from the hot list) is cash traded, like Polymarket. Without it we only have contracts.
+    vol24:e.usd24_total!=null ? +e.usd24_total : ms.reduce((s,m)=>s+num(m,"volume_24h"),0), vol24unit:e.usd24_total!=null ? "usd" : "contracts",
     liq:e.oi_total!=null ? +e.oi_total : ms.reduce((s,m)=>s+num(m,"open_interest"),0),
     end:ms[0].close_time||ms[0].expiration_time, url:"https://kalshi.com/events/"+(e.event_ticker||"").toLowerCase()};
 }
 const kBase = () => ((cfg.relay||"").trim() || KALSHI_RELAY_URL).replace(/\/+$/,"");
-/* Which Kalshi events are hot comes from a file a scheduled GitHub job rebuilds every 10 minutes
+/* Which Kalshi events are hot comes from a file a scheduled GitHub job rebuilds every hour
    (scripts/kalshi-top.mjs, published on the "data" branch). With the relay set up, prices for those
    events are then fetched live; without it, the app shows the prices saved in that file. */
 const KALSHI_LIST_URL = "https://raw.githubusercontent.com/omkela1-cpu/prediction-feed/data/kalshi-top.json";
@@ -253,13 +257,16 @@ async function hotList(){
   if(!d || !Array.isArray(d.events)) throw new Error("hot list missing");
   kaList = d; kaListAt = Date.now(); return d;
 }
+// Live events from the relay carry prices but not the volume totals, so copy those from the hot list.
+const withTotals = e => { const h = kaList && kaList.events.find(x=>x.event_ticker===e.event_ticker);
+  return h ? {...e, usd24_total:h.usd24_total, vol24_total:h.vol24_total, oi_total:h.oi_total} : e; };
 async function fetchKA(){
   const list = await hotList();
   let events = list.events, live = false;
   if(kBase()){
     try {
       const d = await getJSON(`${kBase()}/kalshi/events?tickers=${list.events.slice(0,100).map(e=>encodeURIComponent(e.event_ticker)).join(",")}`);
-      if(d.events && d.events.length){ events = d.events; live = true; }
+      if(d.events && d.events.length){ events = d.events.map(withTotals); live = true; }
     } catch {}
   }
   kaInfo = {live, updated:list.updated, relay:!!kBase()};
@@ -267,7 +274,7 @@ async function fetchKA(){
 }
 async function oneKA(t){
   if(kBase()){
-    try { const d = await getJSON(`${kBase()}/kalshi/event/${encodeURIComponent(t)}`); if(d.event) return normKA(d.event, d.event.markets); } catch {}
+    try { const d = await getJSON(`${kBase()}/kalshi/event/${encodeURIComponent(t)}`); if(d.event) return normKA(withTotals(d.event), d.event.markets); } catch {}
   }
   const e = kaList && kaList.events.find(x=>x.event_ticker===t);
   return e ? normKA(e) : null;
@@ -311,8 +318,10 @@ function ends(it){
   if(days==null || !isFinite(days) || days<0) return "";
   return `<span>Ends ${days<=0?"today":days===1?"tomorrow":"in "+days+" days"}</span>`;
 }
+function chg(d){ const a=Math.abs(d*100); return a<0.05 ? "unchanged" : `<span class="${d>0?"up":"down"}">${d>0?"▲":"▼"} ${a.toFixed(a<10?1:0)} points</span>`; }
 function facts(it){
-  return `<span>24h volume <b>${money(it.vol24)}</b></span><span>${it.src==="pm"?"Liquidity":"Open interest"} ${money(it.liq)}</span>${ends(it)}`;
+  const top = it.outcomes[0], d1 = top && top.d1;
+  return (isFinite(d1) ? `<span>${esc(top.name)} 24h ${chg(d1)}</span>` : "") + `<span>24h volume <b>${it.vol24unit==="contracts" ? compact(it.vol24)+" contracts" : money(it.vol24)}</b></span><span>${it.src==="pm"?"Liquidity":"Open interest"} ${money(it.liq)}</span>${ends(it)}`;
 }
 const outRow = o => `<span class="nm">${esc(o.name)}</span><span class="bar"><i style="width:${Math.round(o.p*100)}%"></i></span><span class="pc">${pct(o.p)}</span>`;
 function item(it, rank){
