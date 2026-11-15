@@ -30,7 +30,7 @@ New ideas go into `docs/BACKLOG.md` as `PROPOSED` with a new ID. Do not build `P
   - `normPM` / `normKA`: turn each site's data into one common item shape.
   - `refresh()`: fetches, merges, ranks, updates pins.
   - `render()` / `card()`: UI.
-- `kalshi-relay-worker.js`: optional Cloudflare Worker, GET-only passthrough with CORS.
+- `kalshi-relay-worker.js`: the Cloudflare Worker. GET only, read-only. Routes `/kalshi/top` (ranked events) and `/kalshi/event/<ticker>`; only the app's origin may call it from a browser.
 
 ## Style
 Plain JavaScript, no frameworks. Escape all external text with `esc()` before putting it in HTML. Mobile first (phone screen).
