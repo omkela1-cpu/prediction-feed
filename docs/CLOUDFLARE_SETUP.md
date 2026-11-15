@@ -65,3 +65,16 @@ If an agent changes `kalshi-relay-worker.js`, repeat step 3 (copy, Edit code, pa
 
 ## Free plan limits
 The free plan allows 100,000 calls a day. The app makes about one call a minute while it is open, so one person stays far below that.
+
+## 7. Switch on pin sync (T-010)
+Pin sync keeps your pins the same on phone and laptop. It stores only the list of pinned markets, under a random code, in a free Cloudflare store called KV. Still free, no card.
+1. Update the Worker code first: repeat step 3 (copy, Edit code, paste, Deploy).
+2. In the Cloudflare dashboard, open **Storage & Databases**, then **KV** (it may sit under **Workers & Pages** > **KV**).
+3. Click **Create** (or **Create a namespace**), name it `prediction-feed-sync`, and click **Add** / **Create**.
+4. Open **Workers & Pages** > `prediction-feed-relay` > **Settings** > **Bindings**, click **Add**, choose **KV namespace**.
+5. Variable name: `SYNC` (capitals, exactly). KV namespace: `prediction-feed-sync`. Click **Save** / **Deploy**.
+6. Check: open `https://prediction-feed-relay.omkela1.workers.dev/sync/abcdefghijkmnpqr2345` in a browser.
+   Good result: `{"ids":[],"updated":null}`. If it says `pin sync is not set up`, the binding from step 5 is missing or not named `SYNC`.
+7. In the app on your phone: Settings > **New code** > **Save**. On the laptop: Settings, type the same code, **Save**. Pins from both now merge.
+
+Free plan limits for KV: 100,000 reads and 1,000 writes a day. The app only writes when your pins change, so one person stays far below that.
