@@ -14,7 +14,7 @@ Agents: only build `TODO` items, top to bottom. Add your own ideas as `PROPOSED`
 | T-007 | 2 | Exclude crypto and sports using each site's tags and categories, not only keywords. | TODO | | R-007 | |
 | T-017 | 2 | Movers section: biggest 24h price change among liquid markets. | TODO | | R-015 | Kalshi: `previous_price_dollars`. Polymarket: check for a 1-day change field, else compute from history. |
 | T-004 | 2 | Show price change since last refresh (green/red delta in points). | TODO | | R-005 | Classes `.up` / `.dn` exist. |
-| T-003 | 2 | Add `manifest.webmanifest` and an original app icon. | TODO | | R-009 | No copied logos. |
+| T-003 | 2 | Add `manifest.webmanifest` and an original app icon. | DONE | Claude | R-009 | Original icon (three bars and a rising line). Home screen install not yet checked on a phone. |
 | T-009 | 2 | Make volume comparable across sites (Kalshi contracts vs Polymarket dollars). | TODO | | R-003 | Record the method in DECISIONS. |
 | T-018 | 3 | Market detail screen: tap a card to see all outcomes and a chart area. | TODO | | R-016 | |
 | T-012 | 3 | Scrubbable price chart for Polymarket: drag to read price and time; ranges 1D / 1W / 1M / All. | TODO | | R-016 | Endpoint verified: `clob.polymarket.com/prices-history`, CORS open. Plain canvas, no chart library needed. |

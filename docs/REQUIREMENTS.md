@@ -12,7 +12,7 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 | R-006 | Group the top markets live into topic buckets: Macro / Politics & Geopolitics / Tech & AI / Companies, Energy & Commodities / Other. | BUILT | New list built (T-016). Keyword rules in `BUCKETS`; checked on live Polymarket and Kalshi data in Node, not yet on a phone. |
 | R-007 | Exclude crypto and sports markets. | BUILT | Keyword regex `SKIP`. May miss odd titles (see T-007). |
 | R-008 | Pin markets so they stay on top and never vanish. | BUILT | Stored in the browser (localStorage). Refreshed by direct lookup even if they leave the top N. |
-| R-009 | Phone first: works as a home-screen web app. | BUILT | No icon/manifest yet (T-003). |
+| R-009 | Phone first: works as a home-screen web app. | BUILT | Manifest and icon added (T-003). Install not yet checked on a phone. |
 | R-010 | Each market shows top outcomes with % price, 24h volume, liquidity/OI, days to end, source and bucket, and links to the original page. | BUILT | |
 | R-011 | If one source fails, show a warning and keep showing the other. | BUILT | |
 | R-012 | Works if Kalshi blocks browsers, via an optional relay URL in Settings. | BUILT | Relay in `kalshi-relay-worker.js` (`/kalshi/top`, `/kalshi/event/<ticker>`), URL set in `KALSHI_RELAY_URL` or Settings. Tested in Node against live Kalshi; not yet deployed or checked on a phone (T-014, T-015). |
