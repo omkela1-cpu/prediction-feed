@@ -27,7 +27,7 @@
   --sans:"Hanken Grotesk",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;overscroll-behavior:none}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--sans);
   font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
@@ -36,6 +36,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 a{color:inherit}
 button,select,input{font:inherit;color:inherit}
+button,a{touch-action:manipulation}
+button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 :focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 [hidden]{display:none!important}
 .link{background:none;border:0;padding:0;color:var(--teal);font-weight:600;font-size:13.5px;cursor:pointer;
@@ -49,7 +51,7 @@ button,select,input{font:inherit;color:inherit}
 .status{font-size:13px;color:var(--ink-2);display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
 .nav{display:flex;gap:22px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
 .nav::-webkit-scrollbar{display:none}
-.nav button{background:none;border:0;border-bottom:3px solid transparent;padding:4px 0 7px;font-weight:600;font-size:15px;
+.nav button{background:none;border:0;border-bottom:3px solid transparent;padding:13px 0 11px;font-weight:600;font-size:15px;
   white-space:nowrap;cursor:pointer}
 .nav button[aria-current="page"]{border-bottom-color:var(--claret)}
 .notice{font-size:14px;color:var(--ink-2);padding:10px 0;border-bottom:1px solid var(--rule)}
@@ -76,7 +78,7 @@ button,select,input{font:inherit;color:inherit}
 .empty{padding:40px 0;color:var(--ink-2)}
 
 /* Market page */
-.back{display:inline-block;margin:0 0 14px;font-size:14px;font-weight:600;color:var(--teal);text-underline-offset:3px}
+.back{display:inline-block;margin:0 0 4px;padding:12px 0;font-size:14px;font-weight:600;color:var(--teal);text-underline-offset:3px}
 .story h1{margin:8px 0 14px;font:500 clamp(26px,6.4vw,36px)/1.12 var(--serif);letter-spacing:-.012em;text-wrap:balance}
 .read{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-height:54px}
 .read .big{font:500 44px/1 var(--serif);letter-spacing:-.02em}
@@ -87,8 +89,8 @@ button,select,input{font:inherit;color:inherit}
 .chart canvas{display:block;width:100%;height:240px;touch-action:pan-y;cursor:crosshair}
 .chart .msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink-2);font-size:14px;
   text-align:center;padding:0 20px;pointer-events:none}
-.ranges{display:flex;gap:22px;margin-top:8px}
-.ranges button{background:none;border:0;border-bottom:3px solid transparent;padding:4px 0;font-weight:600;font-size:14px;cursor:pointer;color:var(--ink-2)}
+.ranges{display:flex;gap:22px;margin-top:0}
+.ranges button{background:none;border:0;border-bottom:3px solid transparent;padding:13px 0 10px;font-weight:600;font-size:14px;cursor:pointer;color:var(--ink-2)}
 .ranges button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--claret)}
 .pick{margin-top:22px;border-top:3px solid var(--ink)}
 .pick button{display:grid;grid-template-columns:minmax(0,1fr) 72px 44px;gap:10px;align-items:center;width:100%;text-align:left;
@@ -104,7 +106,7 @@ dialog{background:var(--paper);color:var(--ink);border:1px solid var(--ink);bord
 dialog::backdrop{background:rgba(51,48,46,.45)}
 dialog h3{margin:0 0 4px;font:500 24px/1.2 var(--serif)}
 label{display:block;font-size:13.5px;color:var(--ink-2);margin:14px 0 4px}
-select,input[type="text"]{width:100%;height:38px;padding:0 10px;font-size:15px;background:#fff;border:1px solid var(--rule);border-radius:3px}
+select,input[type="text"]{width:100%;height:44px;padding:0 10px;font-size:16px;background:#fff;border:1px solid var(--rule);border-radius:3px}
 .pair{display:flex;gap:18px;justify-content:flex-end;margin-top:18px}
 .pair .link{font-size:15px}
 </style>
