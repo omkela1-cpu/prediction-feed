@@ -81,12 +81,10 @@ input,select{width:100%;font:inherit;color:var(--tx);background:var(--bg);border
 /* ---------- EDIT BUCKETS HERE ----------
    First match wins. Unmatched markets go to "Other". */
 const BUCKETS = [
-  {name:"Fed & Rates",  re:/\b(fed|fomc|rate cuts?|rate hikes?|interest rates?|powell|basis points|bps|federal funds)\b/i},
-  {name:"Economy",      re:/\b(inflation|cpi|pce|gdp|recession|unemployment|jobs report|payrolls|tariffs?|treasury|yields?|oil prices?|gas prices?|crude|debt ceiling|economy)\b/i},
-  {name:"Tech & AI",    re:/\b(openai|anthropic|chatgpt|gpt-?\d*|gemini|claude|ai|nvidia|apple|tesla|microsoft|google|meta|spacex|starship|ipo|semiconductor|tiktok)\b/i},
-  {name:"Geopolitics",  re:/\b(ukraine|russia|china|taiwan|israel|gaza|iran|nato|ceasefire|war|putin|zelensky|north korea|venezuela|hamas|syria|sanctions|invade|nuclear)\b/i},
-  {name:"US Politics",  re:/\b(trump|biden|vance|newsom|congress|senate|house|democrat|republican|election|governor|supreme court|shutdown|president|primary|nominee|impeach|mayor|cabinet)\b/i},
-  {name:"Markets",      re:/\b(s&p|nasdaq|dow|stocks?|earnings|market cap|largest company|vix)\b/i},
+  {name:"Macro",          re:/\b(fed|fomc|rate cuts?|rate hikes?|interest rates?|powell|basis points|bps|federal funds|ecb|bank of england|central bank|inflation|cpi|pce|gdp|recession|unemployment|jobs report|payrolls|tariffs?|treasury|yields?|debt ceiling|economy|s&p|nasdaq|dow|vix|fed rates)\b/i},
+  {name:"Politics & Geopolitics", re:/\b(ukraine|russia|china|taiwan|israel|gaza|iran|nato|ceasefire|war|putin|zelensky|north korea|venezuela|hamas|syria|sanctions|invade|nuclear|trump|biden|vance|newsom|congress|senate|house|democrat|republican|elections?|governor|supreme court|shutdown|president|presidential|prime minister|parliament|primary|nominee|impeach|mayor|cabinet|politics|geopolitics)\b/i},
+  {name:"Tech & AI",      re:/\b(openai|anthropic|chatgpt|gpt-?\d*|gemini|claude|ai|agi|nvidia|apple|tesla|microsoft|google|meta|spacex|starship|semiconductor|tiktok|tech|science and technology)\b/i},
+  {name:"Companies, Energy & Commodities", re:/\b(stocks?|earnings|market cap|largest company|ipo|ceo|merger|acquisition|bankrupt|companies|business|oil|oil prices?|gas prices?|crude|wti|brent|opec|natural gas|gold|silver|copper|commodities|energy)\b/i},
 ];
 /* Excluded entirely (crypto + sports). */
 const SKIP = /\b(bitcoin|btc|ethereum|eth|solana|sol|xrp|crypto|stablecoin|coinbase|microstrategy|dogecoin|memecoin|nba|nfl|mlb|nhl|ncaa|ufc|mma|wnba|premier league|la liga|serie a|bundesliga|champions league|europa league|world cup|super bowl|stanley cup|world series|nascar|formula 1|f1|tennis|atp|wta|esports|lol|cs2|dota|valorant|cricket|golf|boxing|vs\.?|sports|soccer|football|basketball|baseball|hockey)\b/i;
@@ -109,10 +107,13 @@ const save = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
 let cfg = { top:+load("top","20"), rank:load("rank","vol24"), src:load("src","both"), relay:load("relay","") };
 let pins = {}; try { pins = JSON.parse(load("pins","{}")) || {}; } catch {}
+for(const p of Object.values(pins)) if(p && p.title && ![...BUCKETS.map(b=>b.name), OTHER].includes(p.topic)) p.topic = bucketOf(p.title);
 let feed = [], pinned = [], active = "All", srcState = {pm:"…", ka:"…"}, byId = {};
 
 function money(n){ n=+n||0; if(n>=1e9)return "$"+(n/1e9).toFixed(1)+"B"; if(n>=1e6)return "$"+(n/1e6).toFixed(1)+"M"; if(n>=1e3)return "$"+Math.round(n/1e3)+"K"; return "$"+Math.round(n); }
-function bucketOf(text){ for(const t of BUCKETS) if(t.re.test(text)) return t.name; return OTHER; }
+function bucketOf(text, extra){ // title first; tags / category only if the title matches nothing
+  for(const s of [text, extra]) if(s) for(const t of BUCKETS) if(t.re.test(s)) return t.name;
+  return OTHER; }
 function json(s){ try { return typeof s==="string" ? JSON.parse(s) : (s||[]); } catch { return []; } }
 async function getJSON(url){
   const ac = new AbortController(); const to = setTimeout(()=>ac.abort(), 15000);
@@ -135,7 +136,7 @@ function normPM(e){
   }
   if(!outcomes.length) return null;
   const text = e.title+" "+tagText;
-  return {src:"pm", id:"pm:"+e.slug, ref:e.slug, title:e.title, topic:bucketOf(text), skip:SKIP.test(text), outcomes,
+  return {src:"pm", id:"pm:"+e.slug, ref:e.slug, title:e.title, topic:bucketOf(e.title, tagText), skip:SKIP.test(text), outcomes,
     vol24:+e.volume24hr||0, liq:+e.liquidity||0, end:e.endDate, url:"https://polymarket.com/event/"+e.slug};
 }
 async function fetchPM(){
@@ -160,7 +161,7 @@ function normKA(e, markets){
     .filter(x=>isFinite(x.p)).sort((a,b)=>b.p-a.p).slice(0,3);
   if(!outcomes.length) return null;
   const text = e.title+" "+(e.category||"");
-  return {src:"ka", id:"ka:"+e.event_ticker, ref:e.event_ticker, title:e.title, topic:bucketOf(text),
+  return {src:"ka", id:"ka:"+e.event_ticker, ref:e.event_ticker, title:e.title, topic:bucketOf(e.title, e.category),
     skip:SKIP.test(text) || /^sports$/i.test(e.category||""), outcomes,
     vol24:ms.reduce((s,m)=>s+num(m,"volume_24h"),0), liq:ms.reduce((s,m)=>s+num(m,"open_interest"),0),
     end:ms[0].close_time||ms[0].expiration_time, url:"https://kalshi.com/events/"+(e.event_ticker||"").toLowerCase()};
