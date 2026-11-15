@@ -72,7 +72,7 @@ input,select{width:100%;font:inherit;color:var(--tx);background:var(--bg);border
   <select id="sRank"><option value="vol24">24h volume</option><option value="liq">Liquidity / open interest</option></select>
   <label>Sources</label>
   <select id="sSrc"><option value="both">Polymarket + Kalshi</option><option value="pm">Polymarket only</option><option value="ka">Kalshi only</option></select>
-  <label>Kalshi relay URL (only if Kalshi gets blocked)</label>
+  <label>Kalshi relay URL (leave empty to use the built-in one)</label>
   <input id="sRelay" placeholder="https://your-worker.workers.dev/" autocapitalize="off" autocorrect="off">
   <div class="pair"><button id="sCancel">Cancel</button><button id="sSave" class="tab on">Save</button></div>
 </dialog>
@@ -94,7 +94,12 @@ const OTHER = "Other";
 /* --------------------------------------- */
 
 const PM = "https://gamma-api.polymarket.com/events";
-const KA = "https://api.elections.kalshi.com/trade-api/v2/events";
+/* Kalshi relay: Kalshi blocks browsers, so Kalshi data comes through our Cloudflare Worker.
+   After deploying it (docs/CLOUDFLARE_SETUP.md), paste its URL between the quotes,
+   e.g. "https://prediction-feed-relay.yourname.workers.dev". Leave "" until then: the app
+   then shows Polymarket only. Settings > "Kalshi relay URL" overrides this on one phone. */
+const KALSHI_RELAY_URL = "";
+const NO_RELAY = "no relay";
 const REFRESH_MS = 60000;
 
 const $ = id => document.getElementById(id);
@@ -160,16 +165,17 @@ function normKA(e, markets){
     vol24:ms.reduce((s,m)=>s+num(m,"volume_24h"),0), liq:ms.reduce((s,m)=>s+num(m,"open_interest"),0),
     end:ms[0].close_time||ms[0].expiration_time, url:"https://kalshi.com/events/"+(e.event_ticker||"").toLowerCase()};
 }
-const kBase = () => ((cfg.relay||"").trim() || KA).replace(/\/+$/,"");
+const kBase = () => ((cfg.relay||"").trim() || KALSHI_RELAY_URL).replace(/\/+$/,"");
 async function fetchKA(){
-  let cursor = "", events = [];
-  for(let i=0;i<5;i++){
-    const d = await getJSON(`${kBase()}?status=open&with_nested_markets=true&limit=200${cursor?"&cursor="+encodeURIComponent(cursor):""}`);
-    events.push(...(d.events||[])); cursor = d.cursor; if(!cursor) break;
-  }
-  return events.map(e=>normKA(e)).filter(Boolean);
+  if(!kBase()) throw new Error(NO_RELAY);
+  const d = await getJSON(`${kBase()}/kalshi/top?limit=100`);
+  return (d.events||[]).map(e=>normKA(e)).filter(Boolean);
 }
-async function oneKA(t){ const d = await getJSON(`${kBase()}/${encodeURIComponent(t)}?with_nested_markets=true`); return d.event ? normKA(d.event, d.event.markets||d.markets) : null; }
+async function oneKA(t){
+  if(!kBase()) return null;
+  const d = await getJSON(`${kBase()}/kalshi/event/${encodeURIComponent(t)}`);
+  return d.event ? normKA(d.event, d.event.markets) : null;
+}
 
 /* ---------- Refresh ---------- */
 let busy=false;
@@ -181,7 +187,7 @@ async function refresh(){
   const res = await Promise.all(jobs);
   const all = [];
   srcState = {pm:cfg.src==="ka"?"off":"…", ka:cfg.src==="pm"?"off":"…"};
-  for(const x of res){ if(x.r){ all.push(...x.r); srcState[x.k]="ok"; } else srcState[x.k]="err: "+(x.e&&x.e.message||"failed"); }
+  for(const x of res){ if(x.r){ all.push(...x.r); srcState[x.k]="ok"; } else srcState[x.k] = x.e&&x.e.message===NO_RELAY ? "norelay" : "err: "+(x.e&&x.e.message||"failed"); }
   if(all.length){
     const key = cfg.rank==="liq" ? "liq" : "vol24";
     const index = Object.fromEntries(all.map(i=>[i.id,i]));
@@ -230,10 +236,11 @@ function render(){
   let html = "";
   for(const s of ["pm","ka"]){
     if(String(srcState[s]).startsWith("err")){
-      const hint = s==="ka" ? " If it keeps failing, Kalshi may be blocking browser access: add a relay URL in settings." : "";
+      const hint = s==="ka" ? " If it keeps failing, check the Kalshi relay URL." : "";
       html += `<div class="note"><b>${s==="pm"?"Polymarket":"Kalshi"}</b> unavailable (${esc(srcState[s].slice(5))}).${hint}</div>`;
     }
   }
+  if(srcState.ka==="norelay") html += `<div class="note"><b>Kalshi</b> is off until the relay is set up (docs/CLOUDFLARE_SETUP.md). Showing Polymarket only.</div>`;
   const inBucket = i => active==="All" || active==="★" || i.topic===active;
   const pv = pinned.filter(i=> active==="★" || inBucket(i)).sort((a,b)=>b.vol24-a.vol24);
   if(pv.length) html += `<h2>★ Pinned</h2>` + pv.map(i=>card(i)).join("");
