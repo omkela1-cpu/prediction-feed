@@ -11,6 +11,7 @@
 // Routes (GET only):
 //   /kalshi/events?tickers=A,B,C   live data for up to 120 events
 //   /kalshi/event/<TICKER>         one event (used for pinned markets)
+//   /kalshi/history?series=S&ticker=T&r=1d|1w|1m|max   price history for one market, as [[unix_seconds, yes_price_0_to_1], ...]
 // Only the app's own site may call it from a browser (ALLOWED_ORIGIN below).
 
 const KALSHI = "https://api.elections.kalshi.com/trade-api/v2";
@@ -20,6 +21,7 @@ const MAX_TICKERS = 120, CHUNK = 40;
 const TICKER = /^[A-Za-z0-9._-]{1,100}$/;
 const MKEYS = ["ticker", "status", "yes_sub_title", "subtitle", "title", "yes_bid_dollars", "yes_ask_dollars",
   "last_price_dollars", "previous_price_dollars", "volume_24h_fp", "open_interest_fp", "close_time", "expiration_time"];
+const RANGE = { "1d": [86400, 1], "1w": [604800, 60], "1m": [2592000, 60], "max": [63072000, 1440] }; // seconds back, minutes per point
 const cache = new Map();    // key -> {t, body}; a convenience only, safe to lose
 
 async function kget(path) {
@@ -70,6 +72,26 @@ export default {
         const events = tickers.map(t => got.get(t)).filter(e => e && e.markets.length);
         return send(origin, 200, remember(key, { events, updated: new Date().toISOString() }));
       }
+      if (path === "/kalshi/history") {
+        const series = (url.searchParams.get("series") || "").toUpperCase(), ticker = (url.searchParams.get("ticker") || "").toUpperCase();
+        const rg = RANGE[url.searchParams.get("r") || "1w"];
+        if (!TICKER.test(series) || !TICKER.test(ticker) || !rg) return send(origin, 400, { error: "give ?series=S&ticker=T&r=1d|1w|1m|max" });
+        const key = "H:" + series + ":" + ticker + ":" + url.searchParams.get("r"), hit = fresh(key);
+        if (hit) return send(origin, 200, hit);
+        const end = Math.floor(Date.now() / 1000);
+        const d = await kget(`/series/${encodeURIComponent(series)}/markets/${encodeURIComponent(ticker)}/candlesticks?start_ts=${end - rg[0]}&end_ts=${end}&period_interval=${rg[1]}`);
+        const pts = [];
+        for (const c of d.candlesticks || []) {
+          // price is the last trade in the period; when nothing traded, use the middle of the best bid and ask
+          let p = parseFloat(c.price && c.price.close_dollars);
+          if (!isFinite(p)) {
+            const b = parseFloat(c.yes_bid && c.yes_bid.close_dollars), a = parseFloat(c.yes_ask && c.yes_ask.close_dollars);
+            p = isFinite(b) && isFinite(a) ? (a + b) / 2 : NaN;
+          }
+          if (isFinite(p) && c.end_period_ts) pts.push([c.end_period_ts, Math.round(p * 10000) / 10000]);
+        }
+        return send(origin, 200, remember(key, { pts }));
+      }
       const m = path.match(/^\/kalshi\/event\/([A-Za-z0-9._-]{1,100})$/);
       if (m) {
         const t = m[1].toUpperCase(), key = "E:" + t, hit = fresh(key);
@@ -79,7 +101,7 @@ export default {
         const ev = slimEvent(d.event, (d.event.markets && d.event.markets.length) ? d.event.markets : d.markets);
         return send(origin, 200, remember(key, { event: ev }));
       }
-      return send(origin, 404, { error: "use /kalshi/events?tickers=... or /kalshi/event/<ticker>" });
+      return send(origin, 404, { error: "use /kalshi/events?tickers=..., /kalshi/event/<ticker> or /kalshi/history?series=..&ticker=..&r=1w" });
     } catch (e) {
       return send(origin, e.status === 404 ? 404 : 502, { error: String(e.message || "failed") });
     }

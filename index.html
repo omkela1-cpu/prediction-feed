@@ -235,7 +235,7 @@ function normKA(e, markets){
   if(!all.length) return null;
   const outcomes = all.slice(0,3);
   const text = e.title+" "+(e.category||"");
-  return {src:"ka", id:"ka:"+e.event_ticker, ref:e.event_ticker, title:e.title, topic:bucketOf(e.title, e.category),
+  return {src:"ka", id:"ka:"+e.event_ticker, ref:e.event_ticker, title:e.title, series:e.series_ticker, topic:bucketOf(e.title, e.category),
     skip:SKIP.test(text) || /^sports$/i.test(e.category||""), outcomes, all,
     vol24:e.vol24_total!=null ? +e.vol24_total : ms.reduce((s,m)=>s+num(m,"volume_24h"),0),
     liq:e.oi_total!=null ? +e.oi_total : ms.reduce((s,m)=>s+num(m,"open_interest"),0),
@@ -362,11 +362,17 @@ function render(){
 /* ---------- Market page with a chart you can drag across ---------- */
 let cur = null, sel = 0, range = 1, pts = [], hover = -1, feedScroll = 0, histSeq = 0;
 const histCache = new Map();
-async function priceHistory(tok, r){
+async function priceHistory(tok, r, series){
   const key = tok+"|"+r, c = histCache.get(key);
   if(c && Date.now()-c.t < 60000) return c.pts;
-  const d = await getJSON(`${CLOB}?market=${encodeURIComponent(tok)}&interval=${RANGES[r][1]}&fidelity=${RANGES[r][2]}`);
-  const p = (d.history||[]).filter(x=>isFinite(x.t)&&isFinite(x.p));
+  let p;
+  if(series){ // Kalshi: through the relay, which returns [[seconds, price], ...]
+    const d = await getJSON(`${kBase()}/kalshi/history?series=${encodeURIComponent(series)}&ticker=${encodeURIComponent(tok)}&r=${RANGES[r][1]}`);
+    p = (d.pts||[]).map(x=>({t:x[0], p:x[1]})).filter(x=>isFinite(x.t)&&isFinite(x.p));
+  } else {
+    const d = await getJSON(`${CLOB}?market=${encodeURIComponent(tok)}&interval=${RANGES[r][1]}&fidelity=${RANGES[r][2]}`);
+    p = (d.history||[]).filter(x=>isFinite(x.t)&&isFinite(x.p));
+  }
   histCache.set(key, {t:Date.now(), pts:p}); return p;
 }
 function fmtTime(t){
@@ -422,11 +428,12 @@ function endScrub(){ if(hover<0) return; hover = -1; draw(); paintRead(); }
 async function loadChart(){
   const o = (cur.all||cur.outcomes)[sel], seq = ++histSeq, msg = $("cmsg");
   pts = []; hover = -1; draw(); paintRead();
-  if(cur.src!=="pm"){ msg.textContent = "Charts for Kalshi markets are not built yet."; return; }
-  if(!o || !o.tok){ msg.textContent = "No price history for this outcome."; return; }
+  const kal = cur.src==="ka", id = kal ? o && o.tk : o && o.tok;
+  if(kal && !kBase()){ msg.textContent = "Kalshi charts need the relay. Set it in Settings."; return; }
+  if(!id || (kal && !cur.series)){ msg.textContent = "No price history for this outcome."; return; }
   msg.textContent = "Loading price history";
   try {
-    const p = await priceHistory(o.tok, range); if(seq!==histSeq) return;
+    const p = await priceHistory(id, range, kal ? cur.series : null); if(seq!==histSeq) return;
     pts = p; msg.textContent = p.length<2 ? "Not enough trading yet to draw a chart." : "";
   } catch(err){ if(seq!==histSeq) return; msg.textContent = "Could not load price history. Tap a range to try again."; }
   draw(); paintRead();
