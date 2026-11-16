@@ -10,7 +10,7 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 | R-004 | Optionally rank by liquidity (Polymarket) / open interest (Kalshi). | BUILT | Settings. |
 | R-005 | Live prices: auto refresh and refresh on returning to the app. | BUILT | Every 60s while visible. Cards also show the 24h change (T-004). |
 | R-006 | Group the top markets live into topic buckets: Macro / Politics & Geopolitics / Tech & AI / Companies, Energy & Commodities / Other. | BUILT | New list built (T-016). Keyword rules in `BUCKETS`; checked on live Polymarket and Kalshi data in Node, not yet on a phone. |
-| R-007 | Exclude crypto and sports markets. | BUILT | Keyword regex `SKIP`. May miss odd titles (see T-007). |
+| R-007 | Exclude crypto and sports markets. | BUILT | Keyword regex `SKIP`, plus Polymarket tag slugs (`SKIP_TAGS`) and Kalshi category Sports or Crypto (`SKIP_CATS`), T-007. |
 | R-008 | Pin markets so they stay on top and never vanish. | BUILT | Stored in the browser (localStorage). Refreshed by direct lookup even if they leave the top N. |
 | R-009 | Phone first: works as a home-screen web app. | BUILT | Manifest and icon added (T-003). Install not yet checked on a phone. |
 | R-010 | Each market shows top outcomes with % price, 24h volume, liquidity/OI, days to end, source and bucket, and links to the original page. | BUILT | |
