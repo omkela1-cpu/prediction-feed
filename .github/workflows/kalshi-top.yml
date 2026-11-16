@@ -1,5 +1,7 @@
-# Rebuilds the Kalshi hot list every hour and publishes it on the "data" branch as
-# kalshi-top.json. The app reads that file. Read-only public data; no secrets are used.
+# Every hour rebuilds the two lists the app reads, on the "data" branch:
+#   interests.json  - markets on both sites matching scripts/interests-config.mjs (scripts/interests.mjs)
+#   kalshi-top.json - the busiest Kalshi events, for "Most traded" and Movers (scripts/kalshi-top.mjs)
+# If one script fails, the last good copy of its file is kept. Read-only public data; no secrets are used.
 name: Kalshi hot list
 on:
   schedule:
@@ -19,7 +21,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Start from the current files
+        run: |
+          mkdir -p out
+          for f in interests.json kalshi-top.json; do
+            curl -fsS -o "out/$f" "https://raw.githubusercontent.com/${{ github.repository }}/data/$f" || rm -f "out/$f"
+          done
+      - name: Match interests on both sites
+        id: interests
+        continue-on-error: true
+        run: node scripts/interests.mjs out/interests.json
       - name: Read Kalshi and rank by 24h volume
+        id: hot
+        continue-on-error: true
         run: node scripts/kalshi-top.mjs out/kalshi-top.json
       - name: Publish to the data branch
         run: |
@@ -27,6 +41,6 @@ jobs:
           git init -q -b data
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add kalshi-top.json
-          git commit -q -m "Kalshi hot list $(date -u +%Y-%m-%dT%H:%MZ)"
+          git add *.json
+          git commit -q -m "Market lists $(date -u +%Y-%m-%dT%H:%MZ) (interests: ${{ steps.interests.outcome }}, hot list: ${{ steps.hot.outcome }})"
           git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" data

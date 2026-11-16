@@ -31,6 +31,7 @@ New ideas go into `docs/BACKLOG.md` as `PROPOSED` with a new ID. Do not build `P
   - `refresh()`: fetches, merges, ranks, updates pins.
   - `render()` / `card()`: UI.
 - `scripts/kalshi-top.mjs` + `.github/workflows/kalshi-top.yml`: every hour, read all open Kalshi events, price the busiest in cash from 24h of trades (`usd24_total`), rank by that, publish the top 150 to `kalshi-top.json` on the `data` branch. The app reads that file (`hotList()` in `index.html`).
+- `scripts/interests-config.mjs` (Om's interests, money floor, routine and settled rules) + `scripts/interests.mjs`: hourly, finds matching markets on both sites and publishes `interests.json` on the `data` branch; the app's default view "My interests" (`fetchInterests()` in `index.html`) shows them with live prices. To change what Om sees, edit the config file, not the app.
 - `kalshi-relay-worker.js`: the Cloudflare Worker. GET only, read-only. Routes `/kalshi/events?tickers=A,B,C` (live prices for the hot list) and `/kalshi/event/<ticker>`; only the app's origin may call it from a browser. It no longer ranks anything.
 
 ## Style

@@ -6,7 +6,7 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 |----|-------------|--------|-------|
 | R-001 | Read-only. No orders, trading, wallets, keys or logins. | MET | Public endpoints only. Cannot be changed by an agent. |
 | R-002 | Pull markets from Polymarket and Kalshi. | BUILT | Polymarket verified on live data. Kalshi hot list built by a scheduled GitHub job (T-025); live prices need the relay (T-014, T-015). Not yet checked on a phone. |
-| R-003 | Show the highest-volume markets per section (default 8 per section), across both sites. | BUILT | Changed by Om 2026-11-16 from a top 20 overall: same number in every section, whichever site. Ranked by 24h volume in cash for both sites (Kalshi priced from trades, T-009). Setting for 5/8/10/15 per section. |
+| R-003 | Default view "My interests": markets on both sites that match Om's interests (scripts/interests-config.mjs), with at least $25k open interest, not routine repeats and not settled; 8 per section, at most 2 (or the interest's `max`) per interest, biggest open interest first. Setting "Show" switches to "Most traded" (8 per section by 24h volume). | BUILT | T-028 (2026-11-16, Om: volume alone gave "slop"). Most traded: T-027, T-009. Setting 5/8/10/15 per section. |
 | R-004 | Optionally rank by liquidity (Polymarket) / open interest (Kalshi). | BUILT | Settings. |
 | R-005 | Live prices: auto refresh and refresh on returning to the app. | BUILT | Every 60s while visible. Cards also show the 24h change (T-004). |
 | R-006 | Group the top markets live into topic buckets: Macro / Politics & Geopolitics / Tech & AI / Companies, Energy & Commodities / Other. | BUILT | New list built (T-016). Keyword rules in `BUCKETS`; checked on live Polymarket and Kalshi data in Node, not yet on a phone. |
@@ -18,7 +18,7 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 | R-012 | Works if Kalshi blocks browsers, via an optional relay URL in Settings. | BUILT | Relay in `kalshi-relay-worker.js` (`/kalshi/top`, `/kalshi/event/<ticker>`), URL set in `KALSHI_RELAY_URL` or Settings. Tested in Node against live Kalshi; not yet deployed or checked on a phone (T-014, T-015). |
 | R-013 | Free hosting, no secrets. Only backend allowed: one free Cloudflare Worker (Kalshi relay, pin sync). | BUILT | GitHub Pages. Worker not deployed yet. |
 | R-014 | Reasonable mobile data use. | BUILT | 3 Polymarket pages per refresh (gzip). See T-008. |
-| R-015 | Movers section: biggest 24h price moves among liquid markets. | BUILT | T-017. Movers tab, 10 biggest moves among markets with at least $50k 24h volume. |
+| R-015 | Movers section: biggest 24h price moves among liquid markets. | BUILT | T-017 (Grok): Movers tab, 10 biggest moves among markets with at least $50k 24h volume, the moving outcome itself traded and still between 3% and 97%. T-028 (Claude): also draws on the interest list; routine repeats, entertainment and the "Other" pile left out. |
 | R-016 | Market detail screen with a scrubbable price chart (drag to read price and time; 1D / 1W / 1M / All), plus sparklines on cards. | BUILT | Polymarket detail screen and scrubbable chart built (T-018, T-012). Kalshi history (T-019) and sparklines (T-020) built. Not yet checked on a real phone. |
 | R-017 | Search any market on either site and pin it to a watchlist. | BUILT | T-005, T-021. Kalshi search needs the Worker redeployed with `/kalshi/search`. |
 | R-018 | Show Kalshi and Polymarket prices side by side for the same event, with the gap and a resolution-rules warning. | DROPPED | Om 2026-11-15: markets are rarely like for like. T-022, T-023 dropped. |
@@ -27,3 +27,4 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 
 ## Non-goals
 Trading, alerts that place orders, user accounts, paid APIs, a native iOS app (unless Om asks later).
+| R-021 | Om can change his interests without touching the app: edit `scripts/interests-config.mjs` (names, sections, match words, exclusions, per-interest max, money floor). Takes effect at the next hourly run. | BUILT | T-028. The repo is public, so interests are topics, nothing personal. |

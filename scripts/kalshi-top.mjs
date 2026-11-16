@@ -81,6 +81,10 @@ async function eventCash(r) {
 const out = process.argv[2];
 if (!out) { console.error("give an output file"); process.exit(2); }
 const started = Date.now();
+// how often each series repeats (daily, weekly, monthly, one_off ...); the app hides routine repeats from Movers
+const freq = {};
+try { const r = await fetch(`${KALSHI}/series`); if (r.ok) for (const s of (await r.json()).series || []) freq[s.ticker] = s.frequency; }
+catch (e) { console.error("series list: " + e.message); }
 const ranked = [];
 let cursor = "", pages = 0, total = 0;
 do {
@@ -113,6 +117,7 @@ for (const r of ranked) {
 priced.sort((a, b) => b.cash - a.cash);
 const events = priced.slice(0, TOP).map(r => ({
   event_ticker: r.e.event_ticker, series_ticker: r.e.series_ticker, title: r.e.title, sub_title: r.e.sub_title, category: r.e.category,
+  frequency: freq[r.e.series_ticker] || null,
   usd24_total: Math.round(r.cash), vol24_total: Math.round(r.v), oi_total: Math.round(r.oi),
   markets: r.ms.slice(0, MAX_MARKETS).map(m => { const o = {}; for (const k of MKEYS) if (m[k] != null) o[k] = m[k]; o.usd24 = Math.round(m._usd); return o; }),
 }));
