@@ -475,7 +475,7 @@ function sItem(it){
     <div class="kicker"><span>${SRC[it.src]}</span><span class="sep">|</span><span class="co">${esc(it.topic)}</span></div>
     <h2><a href="#m=${encodeURIComponent(it.id)}">${esc(it.title)}</a></h2>
     <div class="outs">${it.outcomes.map(o=>`<div class="out">${outRow(o)}</div>`).join("")}</div>
-    ${it.lite ? "" : `<div class="facts">${facts(it)}</div>`}
+    <div class="facts">${it.lite ? "" : facts(it)}<button class="link" type="button" data-pin="${esc(it.id)}">${pins[it.id]?"Unpin":"Pin"}</button></div>
   </article>`;
 }
 function searchHTML(){
@@ -679,6 +679,13 @@ async function route(){
 document.addEventListener("click", e=>{
   const s = e.target.closest("[data-pin]");
   if(s){ const it = (cur && cur.id===s.dataset.pin ? cur : null) || lookup(s.dataset.pin); if(!it) return;
+    if(it.lite && !pins[it.id]){ // a Polymarket search result (T-021): load the full market first, so the pin has volume and chart ids
+      s.disabled = true; s.textContent = "Pinning";
+      onePM(it.ref).catch(()=>null).then(full=>{
+        if(!full){ s.disabled = false; s.textContent = "Could not pin, try again"; return; }
+        sById[full.id] = full; pins[full.id] = full; save("pins", JSON.stringify(pins)); queueSync(); render();
+      });
+      return; }
     if(pins[it.id]) delete pins[it.id]; else pins[it.id] = it;
     save("pins", JSON.stringify(pins)); queueSync();
     if(cur) paintOutcomes();
