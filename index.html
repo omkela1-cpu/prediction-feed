@@ -192,6 +192,13 @@ const PM_SEARCH = "https://gamma-api.polymarket.com/public-search";
 const KALSHI_RELAY_URL = "https://prediction-feed-relay.omkela1.workers.dev";
 const NO_RELAY = "no relay";
 const REFRESH_MS = 60000;
+/* Data use (T-008). Polymarket's busiest pages are mostly sports games with hundreds of markets each,
+   so sports, crypto and esports (tag ids 1, 21, 64) are left out by Polymarket itself; the app still checks too.
+   Kalshi: only the 12 busiest markets per event (the hot list keeps 12 as well).
+   On a connection that says it is slow or asks to save data (Android Chrome reports this; iPhone Safari
+   does not), automatic refresh runs every 3 minutes instead of every minute. */
+const PM_EXCLUDE = "&exclude_tag_id=1&exclude_tag_id=21&exclude_tag_id=64";
+const slowNet = () => { const c = navigator.connection; return !!c && (c.saveData || /(^|-)2g$/.test(c.effectiveType||"")); };
 
 
 const CLOB = "https://clob.polymarket.com/prices-history";
@@ -245,10 +252,15 @@ function normPM(e){
     // open interest: dollars at stake now, the same measure Kalshi reports (each contract pays $1)
     vol24:+e.volume24hr||0, liq:+e.openInterest||0, end:e.endDate, url:"https://polymarket.com/event/"+e.slug};
 }
-async function fetchPM(){
+// Polymarket's own servers cache this list for up to 5 minutes, so asking every minute mostly re-downloads
+// the same data (about 1 MB). Reuse it for PM_LIST_MS unless Refresh is tapped (T-008).
+const PM_LIST_MS = 150000; let pmList = null, pmListAt = 0;
+async function fetchPM(force){
+  if(!force && pmList && Date.now()-pmListAt < PM_LIST_MS) return pmList;
   const pages = await Promise.all([0,50,100].map(o =>
-    getJSON(`${PM}?active=true&closed=false&order=volume24hr&ascending=false&limit=50&offset=${o}`)));
-  return pages.flat().map(normPM).filter(Boolean);
+    getJSON(`${PM}?active=true&closed=false&order=volume24hr&ascending=false&limit=50&offset=${o}${PM_EXCLUDE}`)));
+  pmList = pages.flat().map(normPM).filter(Boolean); pmListAt = Date.now();
+  return pmList;
 }
 async function onePM(slug){ const d = await getJSON(`${PM}?slug=${encodeURIComponent(slug)}`); return d[0] ? normPM(d[0]) : null; }
 
@@ -296,7 +308,7 @@ async function fetchKA(){
   let events = list.events, live = false;
   if(kBase()){
     try {
-      const d = await getJSON(`${kBase()}/kalshi/events?tickers=${list.events.slice(0,100).map(e=>encodeURIComponent(e.event_ticker)).join(",")}`);
+      const d = await getJSON(`${kBase()}/kalshi/events?tickers=${list.events.slice(0,100).map(e=>encodeURIComponent(e.event_ticker)).join(",")}&max_markets=12`);
       if(d.events && d.events.length){ events = d.events.map(withTotals); live = true; }
     } catch {}
   }
@@ -336,7 +348,7 @@ async function fetchInterests(){
   if(cfg.src!=="pm" && ka.length){
     const live = {};
     if(kBase()) try {
-      const d = await getJSON(`${kBase()}/kalshi/events?tickers=${ka.slice(0,120).map(x=>encodeURIComponent(x.event_ticker)).join(",")}`);
+      const d = await getJSON(`${kBase()}/kalshi/events?tickers=${ka.slice(0,120).map(x=>encodeURIComponent(x.event_ticker)).join(",")}&max_markets=12`);
       for(const e of d.events||[]) live[e.event_ticker] = e;
     } catch {}
     for(const x of ka){
@@ -401,13 +413,20 @@ async function syncNow(){
 
 /* ---------- Refresh ---------- */
 let busy=false;
-async function refresh(){
+async function refresh(force){
   if(busy) return; busy=true; $("refresh").disabled = true;
-  const jobs = [];
-  if(cfg.src!=="ka") jobs.push(fetchPM().then(r=>({k:"pm",r}),e=>({k:"pm",e})));
-  if(cfg.src!=="pm") jobs.push(fetchKA().then(r=>({k:"ka",r}),e=>({k:"ka",e})));
-  if(cfg.mode==="interests") jobs.push(fetchInterests().then(r=>({k:"in",r}),e=>({k:"in",e})));
-  const res = await Promise.all(jobs);
+  // My interests only needs the interest list; the busiest-markets lists (about 1 MB) are fetched
+  // only if that list fails, so the feed still shows something (T-008).
+  const busiest = () => [
+    ...(cfg.src!=="ka" ? [fetchPM(force===true).then(r=>({k:"pm",r}),e=>({k:"pm",e}))] : []),
+    ...(cfg.src!=="pm" ? [fetchKA().then(r=>({k:"ka",r}),e=>({k:"ka",e}))] : [])];
+  let res;
+  if(cfg.mode==="interests"){
+    res = [await fetchInterests().then(r=>({k:"in",r}),e=>({k:"in",e}))];
+    if(!res[0].r) res.push(...await Promise.all(busiest()));
+    else { kaInfo = {live:false, updated:null, relay:!!kBase()}; // no hot-list prices were read this time
+      if(cfg.src!=="ka") res.push({k:"pm",r:[]}); if(cfg.src!=="pm") res.push({k:"ka",r:[]}); }
+  } else res = await Promise.all(busiest());
   const all = []; let ins = null;
   srcState = {pm:cfg.src==="ka"?"off":"…", ka:cfg.src==="pm"?"off":"…", in:cfg.mode==="interests"?"…":"off"};
   for(const x of res){
@@ -765,7 +784,7 @@ document.addEventListener("click", e=>{
     document.querySelectorAll("#ranges button").forEach((b,i)=>b.setAttribute("aria-pressed", i===range)); loadChart(); }
 });
 $("back").addEventListener("click", e=>{ e.preventDefault(); location.hash = ""; });
-$("refresh").onclick = refresh;
+$("refresh").onclick = ()=>refresh(true);
 $("sbtn").onclick = ()=>openSearch(!searchOn);
 $("sclose").onclick = ()=>openSearch(false);
 $("sq").addEventListener("input", ()=>{ clearTimeout(sTimer); const q = $("sq").value.trim();
@@ -786,7 +805,8 @@ $("sSave").onclick = ()=>{
 addEventListener("hashchange", route);
 addEventListener("resize", draw);
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) refresh().then(syncNow); });
-setInterval(()=>{ if(!document.hidden) refresh(); }, REFRESH_MS);
+let ticks = 0;
+setInterval(()=>{ if(!document.hidden && ++ticks % (slowNet() ? 3 : 1) === 0) refresh(); }, REFRESH_MS);
 render(); route(); refresh().then(syncNow);
 </script>
 </body>

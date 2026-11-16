@@ -10,6 +10,7 @@
 //
 // Routes (GET only):
 //   /kalshi/events?tickers=A,B,C   live data for up to 120 events
+//                                  &max_markets=N keeps only each event's N busiest markets (T-008, saves data)
 //   /kalshi/event/<TICKER>         one event (used for pinned markets)
 //   /kalshi/history?series=S&ticker=T&r=1d|1w|1m|max   price history for one market, as [[unix_seconds, yes_price_0_to_1], ...]
 //   /kalshi/search?q=words         open events matching the words (T-005), same shape as /kalshi/events.
@@ -106,12 +107,14 @@ export default {
       if (path === "/kalshi/events") {
         const tickers = [...new Set((url.searchParams.get("tickers") || "").split(",").map(s => s.trim().toUpperCase()).filter(s => TICKER.test(s)))].slice(0, MAX_TICKERS);
         if (!tickers.length) return send(origin, 400, { error: "give ?tickers=A,B,C" });
-        const key = "L:" + tickers.join(","), hit = fresh(key);
+        const maxM = Math.min(Math.max(parseInt(url.searchParams.get("max_markets"), 10) || 0, 0), 200);
+        const key = "L:" + maxM + ":" + tickers.join(","), hit = fresh(key);
         if (hit) return send(origin, 200, hit);
         const chunks = []; for (let i = 0; i < tickers.length; i += CHUNK) chunks.push(tickers.slice(i, i + CHUNK));
         const parts = await Promise.all(chunks.map(c => kget(`/events?tickers=${c.map(encodeURIComponent).join(",")}&with_nested_markets=true&limit=200`)));
         const got = new Map();
-        for (const d of parts) for (const e of d.events || []) got.set(e.event_ticker, slimEvent(e));
+        const busiest = e => !maxM ? e : { ...e, markets: e.markets.sort((a, b) => (parseFloat(b.volume_24h_fp) || 0) - (parseFloat(a.volume_24h_fp) || 0)).slice(0, maxM) };
+        for (const d of parts) for (const e of d.events || []) got.set(e.event_ticker, busiest(slimEvent(e)));
         // keep the order asked for; events Kalshi no longer returns (closed) are simply left out
         const events = tickers.map(t => got.get(t)).filter(e => e && e.markets.length);
         return send(origin, 200, remember(key, { events, updated: new Date().toISOString() }));
