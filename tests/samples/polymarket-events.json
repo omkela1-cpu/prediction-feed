@@ -1,0 +1,343 @@
+[
+ {
+  "slug": "will-jesus-christ-return-before-2027",
+  "title": "Will Jesus Christ return before 2027?",
+  "volume24hr": 166174.73231700005,
+  "liquidity": 2182280.89313,
+  "endDate": "2027-01-01T04:59:00Z",
+  "tags": [
+   {
+    "label": "Parent For Derivative",
+    "slug": "parent-for-derivative"
+   },
+   {
+    "label": "Culture",
+    "slug": "pop-culture"
+   }
+  ],
+  "markets": [
+   {
+    "question": "Will Jesus Christ return before 2027?",
+    "groupItemTitle": "",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.0085\", \"0.9915\"]",
+    "clobTokenIds": "[\"69324317355037271422943965141382095011871956039434394956830818206664869608517\", \"51797157743046504218541616681751597845468055908324407922581755135522797852101\"]",
+    "oneDayPriceChange": -0.002,
+    "volume24hr": 166174.73231700005,
+    "closed": false,
+    "active": true
+   }
+  ],
+  "openInterest": 2415090.397783,
+  "series": [
+   {
+    "recurrence": null
+   }
+  ]
+ },
+ {
+  "slug": "fed-decision-in-december-20260729232808632",
+  "title": "Fed Decision in December?",
+  "volume24hr": 346988.42530400003,
+  "liquidity": 1932704.39584,
+  "endDate": "2026-12-10T04:59:00Z",
+  "tags": [
+   {
+    "label": "Fed",
+    "slug": "fed"
+   },
+   {
+    "label": "fomc",
+    "slug": "fomc"
+   },
+   {
+    "label": "Trump",
+    "slug": "trump"
+   },
+   {
+    "label": "Economy",
+    "slug": "economy"
+   },
+   {
+    "label": "Fed Rates",
+    "slug": "fed-rates"
+   },
+   {
+    "label": "Kevin Warsh",
+    "slug": "kevin-warsh"
+   },
+   {
+    "label": "Global Rates",
+    "slug": "Global-Rates"
+   },
+   {
+    "label": "Economic Policy",
+    "slug": "economic-policy"
+   },
+   {
+    "label": "Macro Indicators",
+    "slug": "macro-indicators"
+   },
+   {
+    "label": "Recurring",
+    "slug": "recurring"
+   }
+  ],
+  "markets": [
+   {
+    "question": "Will the Fed decrease interest rates by 50+ bps after the December 2026 meeting?",
+    "groupItemTitle": "50+ bps decrease",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.0025\", \"0.9975\"]",
+    "clobTokenIds": "[\"17640596861394454242836532536014033416733783473450136742726948856144855149507\", \"104236736263775307891497202874191911203963566711959725788584750440530976742193\"]",
+    "volume24hr": 73854.82167099998,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Will the Fed decrease interest rates by 25 bps after the December 2026 meeting?",
+    "groupItemTitle": "25 bps decrease",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.0035\", \"0.9965\"]",
+    "clobTokenIds": "[\"77367448845023382525249480243608609306658725883285195065573683809293972009019\", \"23677896678650147625251750117853328843601853501710889530409633595389256242910\"]",
+    "volume24hr": 9781.409666,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Will there be no change in Fed interest rates after the December 2026 meeting?",
+    "groupItemTitle": "No change",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.0355\", \"0.9645\"]",
+    "clobTokenIds": "[\"42865728742506860386768556888821101266630139112044622335353850919229585308601\", \"8077351031134730167836761678618167504307708651130165095377248922919635337796\"]",
+    "volume24hr": 106279.36237000002,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Will the Fed increase interest rates by 25 bps after the December 2026 meeting?",
+    "groupItemTitle": "25 bps increase",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.875\", \"0.125\"]",
+    "clobTokenIds": "[\"111662129652828266889360374468657435151479595863413519836161861837506140152890\", \"94483965432909797688470702512207472940215538148754820061518518664128018848687\"]",
+    "oneDayPriceChange": 0.02,
+    "volume24hr": 126640.570432,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Will the Fed increase interest rates by 50+ bps after the December 2026 meeting?",
+    "groupItemTitle": "50+ bps increase",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.0875\", \"0.9125\"]",
+    "clobTokenIds": "[\"35090254409399344650860070211816464534198960801264823587796928404808383727584\", \"17037715451587457598270390992151934195448806241696976473961259598235638233970\"]",
+    "oneDayPriceChange": -0.004,
+    "volume24hr": 30432.261165000004,
+    "closed": false,
+    "active": true
+   }
+  ],
+  "openInterest": 5637930.834017,
+  "series": [
+   {
+    "recurrence": "monthly"
+   }
+  ]
+ },
+ {
+  "slug": "nfl-sf-dal-2026-11-15",
+  "title": "49ers vs. Cowboys",
+  "volume24hr": 8606099.048651999,
+  "liquidity": 1947988.71235,
+  "endDate": "2026-11-15T21:25:00Z",
+  "tags": [
+   {
+    "label": "Sports",
+    "slug": "sports"
+   },
+   {
+    "label": "NFL (All)",
+    "slug": "nfl"
+   },
+   {
+    "label": "Games",
+    "slug": "games"
+   }
+  ],
+  "markets": [
+   {
+    "question": "49ers vs. Cowboys",
+    "outcomes": "[\"49ers\", \"Cowboys\"]",
+    "outcomePrices": "[\"0.9475\", \"0.0525\"]",
+    "clobTokenIds": "[\"55797876453514533289827581042178962732253572878799251929298422210642595743616\", \"111116445215105452402195447335570138990948116962434354359812521722521696149089\"]",
+    "oneDayPriceChange": 0.2925,
+    "volume24hr": 6292966.867191999,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Spread: 49ers (-1.5)",
+    "groupItemTitle": "Spread -1.5",
+    "outcomes": "[\"49ers\", \"Cowboys\"]",
+    "outcomePrices": "[\"0.913\", \"0.087\"]",
+    "clobTokenIds": "[\"24074327923429021252233439162618731906332199211266750955283087922327901225864\", \"44017871804309583437075894123907389648691900025817488899315657176683359135016\"]",
+    "oneDayPriceChange": 0.288,
+    "volume24hr": 90930.20991499997,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Spread: 49ers (-2.5)",
+    "groupItemTitle": "Spread -2.5",
+    "outcomes": "[\"49ers\", \"Cowboys\"]",
+    "outcomePrices": "[\"0.8835\", \"0.1165\"]",
+    "clobTokenIds": "[\"76388577752358689915861926556098829743383371063400365168255303789317546505002\", \"26182673670567202222495754804603923388843201884360664876973142624147899393722\"]",
+    "oneDayPriceChange": 0.2885,
+    "volume24hr": 101836.709668,
+    "closed": false,
+    "active": true
+   }
+  ],
+  "openInterest": 7712405.946968001,
+  "series": [
+   {
+    "recurrence": "daily"
+   }
+  ]
+ },
+ {
+  "slug": "what-price-will-bitcoin-hit-in-november-2026",
+  "title": "What price will Bitcoin hit in November?",
+  "volume24hr": 1219243.516249,
+  "liquidity": 1580454.74131,
+  "endDate": "2026-12-01T05:00:00Z",
+  "tags": [
+   {
+    "label": "Bitcoin",
+    "slug": "bitcoin"
+   },
+   {
+    "label": "Monthly",
+    "slug": "monthly"
+   },
+   {
+    "label": "Hit Price",
+    "slug": "hit-price"
+   },
+   {
+    "label": "Crypto",
+    "slug": "crypto"
+   },
+   {
+    "label": "Crypto Prices",
+    "slug": "crypto-prices"
+   },
+   {
+    "label": "Recurring",
+    "slug": "recurring"
+   }
+  ],
+  "markets": [
+   {
+    "question": "Will Bitcoin reach $100,000 in November?",
+    "groupItemTitle": "\u2191 100,000",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.0075\", \"0.9925\"]",
+    "clobTokenIds": "[\"25751370493780145588704231064922219074727458178670851849616281276431556525048\", \"75399923267000871910386187138860945407107222823359380402309870784476870975525\"]",
+    "oneDayPriceChange": 0.002,
+    "volume24hr": 26724.461198,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Will Bitcoin reach $97,500 in November?",
+    "groupItemTitle": "\u2191 97,500",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.011\", \"0.989\"]",
+    "clobTokenIds": "[\"80577698226820727453570703509089820812027386124636712693749170497158999449890\", \"87343154697701721134498046037968267541864712276726354720190804879489086320215\"]",
+    "oneDayPriceChange": 0.0035,
+    "volume24hr": 14636.385339,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Will Bitcoin reach $95,000 in November?",
+    "groupItemTitle": "\u2191 95,000",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.01\", \"0.99\"]",
+    "clobTokenIds": "[\"29065444882776697573400473728628440304591558923710337634956765182738950975748\", \"95109315248909249636216145165816787604055324132607401181449207560153104752795\"]",
+    "oneDayPriceChange": 0.0015,
+    "volume24hr": 17360.835231,
+    "closed": false,
+    "active": true
+   }
+  ],
+  "openInterest": 2428768.1845780006,
+  "series": [
+   {
+    "recurrence": "monthly"
+   }
+  ]
+ },
+ {
+  "slug": "pgl-major-singapore-2026-winner-1793811600000",
+  "title": "PGL Major Singapore 2026: Winner",
+  "volume24hr": 73858.547299,
+  "liquidity": 1537087.63645,
+  "endDate": "2026-12-15T04:59:00Z",
+  "tags": [
+   {
+    "label": "CS2",
+    "slug": "cs2"
+   },
+   {
+    "label": "Sports",
+    "slug": "sports"
+   },
+   {
+    "label": "Esports",
+    "slug": "esports"
+   },
+   {
+    "label": "counter strike 2",
+    "slug": "counter-strike-2"
+   }
+  ],
+  "markets": [
+   {
+    "question": "Will FURIA Win the PGL Major Singapore 2026?",
+    "groupItemTitle": "FURIA",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.13\", \"0.87\"]",
+    "clobTokenIds": "[\"21449974998058969470633012519434032326778555080921351600243940089382423955930\", \"107284318603127824141296897317338592741299671696589656327590665033388481497376\"]",
+    "oneDayPriceChange": 0.025,
+    "volume24hr": 8191.690265999999,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Will Vitality Win the PGL Major Singapore 2026?",
+    "groupItemTitle": "Vitality",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.265\", \"0.735\"]",
+    "clobTokenIds": "[\"17398589075818351186214348193436104679000612043849277413206521415465817153618\", \"36777485366349545580637329130993657010868529857067013533047242155658425412116\"]",
+    "oneDayPriceChange": -0.03,
+    "volume24hr": 2741.819636,
+    "closed": false,
+    "active": true
+   },
+   {
+    "question": "Will Spirit Win the PGL Major Singapore 2026?",
+    "groupItemTitle": "Spirit",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.155\", \"0.845\"]",
+    "clobTokenIds": "[\"35890925428683820969643047597154941081449004447609238803696007879631237882551\", \"16164489746425838433589760162477021563252229776914369677965792264740316637907\"]",
+    "volume24hr": 2233.282485,
+    "closed": false,
+    "active": true
+   }
+  ],
+  "openInterest": 33519.770512999996,
+  "series": []
+ }
+]

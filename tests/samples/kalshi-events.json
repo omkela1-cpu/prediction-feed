@@ -1,0 +1,194 @@
+{
+ "hot_list_event": {
+  "event_ticker": "KXFEDDECISION-26DEC",
+  "series_ticker": "KXFEDDECISION",
+  "title": "Fed decision in Dec 2026?",
+  "sub_title": "On Dec 9, 2026",
+  "category": "Economics",
+  "usd24_total": 355099,
+  "vol24_total": 473992,
+  "oi_total": 8158148,
+  "markets": [
+   {
+    "ticker": "KXFEDDECISION-26DEC-H0",
+    "status": "active",
+    "yes_sub_title": "Fed maintains rate",
+    "subtitle": "Hike 0bps",
+    "title": "Will the Federal Reserve Hike rates by 0bps at their December 2026 meeting?",
+    "yes_bid_dollars": "0.0400",
+    "yes_ask_dollars": "0.0500",
+    "last_price_dollars": "0.0500",
+    "previous_price_dollars": "0.0400",
+    "volume_24h_fp": "378214.25",
+    "open_interest_fp": "2624986.86",
+    "close_time": "2026-12-09T18:59:00Z",
+    "expiration_time": "2027-03-10T19:01:00Z",
+    "usd24": 328000
+   },
+   {
+    "ticker": "KXFEDDECISION-26DEC-H26",
+    "status": "active",
+    "yes_sub_title": "Hike >25bps",
+    "subtitle": "Hike >25bps",
+    "title": "Will the Federal Reserve Hike rates by >25bps at their December 2026 meeting?",
+    "yes_bid_dollars": "0.0800",
+    "yes_ask_dollars": "0.0900",
+    "last_price_dollars": "0.0900",
+    "previous_price_dollars": "0.1100",
+    "volume_24h_fp": "51987.81",
+    "open_interest_fp": "2391761.65",
+    "close_time": "2026-12-09T18:59:00Z",
+    "expiration_time": "2027-03-10T19:01:00Z",
+    "usd24": 18476
+   },
+   {
+    "ticker": "KXFEDDECISION-26DEC-C25",
+    "status": "active",
+    "yes_sub_title": "Cut 25bps",
+    "subtitle": "Cut 25bps",
+    "title": "Will the Federal Reserve Cut rates by 25bps at their December 2026 meeting?",
+    "yes_bid_dollars": "0.0000",
+    "yes_ask_dollars": "0.0100",
+    "last_price_dollars": "0.0100",
+    "previous_price_dollars": "0.0100",
+    "volume_24h_fp": "29943.88",
+    "open_interest_fp": "855452.58",
+    "close_time": "2026-12-09T18:59:00Z",
+    "expiration_time": "2027-03-10T19:01:00Z",
+    "usd24": 299
+   },
+   {
+    "ticker": "KXFEDDECISION-26DEC-H25",
+    "status": "active",
+    "yes_sub_title": "Hike 25bps",
+    "subtitle": "Hike 25bps",
+    "title": "Will the Federal Reserve Hike rates by 25bps at their December 2026 meeting?",
+    "yes_bid_dollars": "0.8800",
+    "yes_ask_dollars": "0.8900",
+    "last_price_dollars": "0.8900",
+    "previous_price_dollars": "0.8700",
+    "volume_24h_fp": "13098.05",
+    "open_interest_fp": "1942246.70",
+    "close_time": "2026-12-09T18:59:00Z",
+    "expiration_time": "2027-03-10T19:01:00Z",
+    "usd24": 7763
+   },
+   {
+    "ticker": "KXFEDDECISION-26DEC-C26",
+    "status": "active",
+    "yes_sub_title": "Cut >25bps",
+    "subtitle": "Cut >25bps",
+    "title": "Will the Federal Reserve Cut rates by >25bps at their December 2026 meeting?",
+    "yes_bid_dollars": "0.0000",
+    "yes_ask_dollars": "0.0100",
+    "last_price_dollars": "0.0100",
+    "previous_price_dollars": "0.0100",
+    "volume_24h_fp": "748.15",
+    "open_interest_fp": "343700.48",
+    "close_time": "2026-12-09T18:59:00Z",
+    "expiration_time": "2027-03-10T19:01:00Z",
+    "usd24": 560
+   }
+  ]
+ },
+ "relay_event": {
+  "event_ticker": "KXELONMARS-99",
+  "series_ticker": "KXELONMARS",
+  "title": "Will Elon Musk visit Mars in his lifetime?",
+  "sub_title": "Before 2099",
+  "category": "Science and Technology",
+  "markets": [
+   {
+    "ticker": "KXELONMARS-99",
+    "status": "active",
+    "yes_sub_title": "Mars",
+    "title": "Will Elon Musk visit Mars before Aug 1, 2099?",
+    "yes_bid_dollars": "0.1100",
+    "yes_ask_dollars": "0.1200",
+    "last_price_dollars": "0.1000",
+    "previous_price_dollars": "0.1200",
+    "volume_24h_fp": "400.39",
+    "open_interest_fp": "40087.78",
+    "close_time": "2099-08-01T04:59:00Z",
+    "expiration_time": "2099-08-08T15:00:00Z"
+   }
+  ]
+ },
+ "sports_event": {
+  "event_ticker": "KXWCCAREERGOALS-KMBAPPE",
+  "series_ticker": "KXWCCAREERGOALS",
+  "title": "Kylian Mbappe Total FIFA World Cup Career Goals",
+  "sub_title": "Kylian Mbappe",
+  "category": "Sports",
+  "markets": [
+   {
+    "ticker": "KXWCCAREERGOALS-KMBAPPE-30",
+    "status": "active",
+    "yes_sub_title": "30+ Goals Scored",
+    "subtitle": "30+ Goals Scored",
+    "title": "Will Kylian Mbappe score at least 30 goals in the World Cup in his career?",
+    "yes_bid_dollars": "0.8100",
+    "yes_ask_dollars": "0.8800",
+    "last_price_dollars": "0.8700",
+    "previous_price_dollars": "0.8700",
+    "volume_24h_fp": "0.00",
+    "open_interest_fp": "314.70",
+    "close_time": "2043-07-28T14:00:00Z",
+    "expiration_time": "2043-07-28T14:00:00Z"
+   },
+   {
+    "ticker": "KXWCCAREERGOALS-KMBAPPE-35",
+    "status": "active",
+    "yes_sub_title": "35+ Goals Scored",
+    "title": "Will Kylian Mbappe score at least 35 goals in the World Cup in his career?",
+    "yes_bid_dollars": "0.1600",
+    "yes_ask_dollars": "0.2300",
+    "last_price_dollars": "0.1500",
+    "previous_price_dollars": "0.1500",
+    "volume_24h_fp": "0.00",
+    "open_interest_fp": "2763.51",
+    "close_time": "2043-07-28T14:00:00Z",
+    "expiration_time": "2043-07-28T14:00:00Z"
+   }
+  ]
+ },
+ "crypto_event": {
+  "event_ticker": "KXBTCD-26NOV1520",
+  "series_ticker": "KXBTCD",
+  "title": "BTC price on Nov 15, 2026 at 8pm EST?",
+  "sub_title": "On Nov 15, 2026 at 8pm EST",
+  "category": "Crypto",
+  "markets": [
+   {
+    "ticker": "KXBTCD-26NOV1520-T57599.99",
+    "status": "active",
+    "yes_sub_title": "$57,600 or above",
+    "subtitle": "$57,600 or above",
+    "title": "Bitcoin price on Nov 15, 2026?",
+    "yes_bid_dollars": "0.9900",
+    "yes_ask_dollars": "1.0000",
+    "last_price_dollars": "0.0000",
+    "previous_price_dollars": "0.0000",
+    "volume_24h_fp": "0.00",
+    "open_interest_fp": "0.00",
+    "close_time": "2026-11-16T01:00:00Z",
+    "expiration_time": "2026-11-23T01:00:00Z"
+   },
+   {
+    "ticker": "KXBTCD-26NOV1520-T57699.99",
+    "status": "active",
+    "yes_sub_title": "$57,700 or above",
+    "subtitle": "$57,700 or above",
+    "title": "Bitcoin price on Nov 15, 2026?",
+    "yes_bid_dollars": "0.9900",
+    "yes_ask_dollars": "1.0000",
+    "last_price_dollars": "0.0000",
+    "previous_price_dollars": "0.0000",
+    "volume_24h_fp": "0.00",
+    "open_interest_fp": "0.00",
+    "close_time": "2026-11-16T01:00:00Z",
+    "expiration_time": "2026-11-23T01:00:00Z"
+   }
+  ]
+ }
+}
