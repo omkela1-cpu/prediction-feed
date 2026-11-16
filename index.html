@@ -132,8 +132,8 @@ select,input[type="text"]{width:100%;height:44px;padding:0 10px;font-size:16px;b
 
 <dialog id="dlg">
   <h3>Settings</h3>
-  <label for="sTop">Markets to show</label>
-  <select id="sTop"><option>10</option><option>20</option><option>30</option><option>50</option></select>
+  <label for="sTop">Markets per section</label>
+  <select id="sTop"><option>5</option><option>8</option><option>10</option><option>15</option></select>
   <label for="sRank">Rank by</label>
   <select id="sRank"><option value="vol24">24h volume</option><option value="liq">Liquidity / open interest</option></select>
   <label for="sSrc">Sources</label>
@@ -179,7 +179,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const load = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const save = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
-let cfg = { top:+load("top","20"), rank:load("rank","vol24"), src:load("src","both"), relay:load("relay","") };
+let cfg = { top:+load("perSection","8"), rank:load("rank","vol24"), src:load("src","both"), relay:load("relay","") };
 let pins = {}; try { pins = JSON.parse(load("pins","{}")) || {}; } catch {}
 function bucketOf(text, extra){ // title first; tags / category only if the title matches nothing
   for(const s of [text, extra]) if(s) for(const t of BUCKETS) if(t.re.test(s)) return t.name;
@@ -360,7 +360,9 @@ async function refresh(){
       try { const u = p.src==="pm" ? await onePM(p.ref) : await oneKA(p.ref); if(u) pins[p.id]=u; } catch {}
     }));
     save("pins", JSON.stringify(pins));
-    feed = all.filter(i=>!i.skip && !pins[i.id]).sort((a,b)=>b[key]-a[key]).slice(0,cfg.top);
+    // the same number of markets in every section, whichever site they come from
+    const pool = all.filter(i=>!i.skip && !pins[i.id]).sort((a,b)=>b[key]-a[key]), per = {};
+    feed = pool.filter(i=> (per[i.topic] = (per[i.topic]||0) + 1) <= cfg.top);
     $("stamp").textContent = "Updated " + new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
   }
   busy=false; $("refresh").disabled = false; render();
@@ -414,10 +416,9 @@ function render(){
   const pv = pinned.filter(i=> active==="All" || active==="Pinned" || i.topic===active).sort((a,b)=>b.vol24-a.vol24);
   if(pv.length) html += `<div class="section">Pinned</div>` + pv.map(i=>item(i)).join("");
   if(active!=="Pinned"){
-    let rank = 0; const ranked = new Map(feed.map(i=>[i.id, ++rank]));
     for(const n of order.filter(n=>active==="All"||active===n)){
-      const list = feed.filter(i=>i.topic===n);
-      if(list.length) html += `<div class="section">${esc(n)}</div>` + list.map(i=>item(i, ranked.get(i.id))).join("");
+      const list = feed.filter(i=>i.topic===n); // already in rank order; numbered within the section
+      if(list.length) html += `<div class="section">${esc(n)}</div>` + list.map((i,k)=>item(i, k+1)).join("");
     }
   }
   if(!html) html = `<div class="empty">${busy||!feed.length?"Loading markets":"Nothing in this section right now."}</div>`;
@@ -567,7 +568,7 @@ $("sSave").onclick = ()=>{
   if(code && !okCode(code)){ $("syncMsg").textContent = "A sync code is 16 to 64 letters and digits."; return; }
   if(code!==syncCode){ syncCode = code; syncErr = ""; save("sync", code); save("syncBase","[]"); save("syncAt",""); }
   cfg = {top:+$("sTop").value, rank:$("sRank").value, src:$("sSrc").value, relay:$("sRelay").value.trim()};
-  for(const k in cfg) save(k, cfg[k]);
+  for(const k in cfg) save(k==="top" ? "perSection" : k, cfg[k]);
   $("dlg").close(); refresh().then(syncNow);
 };
 addEventListener("hashchange", route);

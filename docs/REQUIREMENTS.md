@@ -6,7 +6,7 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 |----|-------------|--------|-------|
 | R-001 | Read-only. No orders, trading, wallets, keys or logins. | MET | Public endpoints only. Cannot be changed by an agent. |
 | R-002 | Pull markets from Polymarket and Kalshi. | BUILT | Polymarket verified on live data. Kalshi hot list built by a scheduled GitHub job (T-025); live prices need the relay (T-014, T-015). Not yet checked on a phone. |
-| R-003 | Show the top N highest-volume markets (default 20) across both sites. | BUILT | Ranked by 24h volume in cash for both sites (Kalshi priced from trades, T-009). Setting for 10/20/30/50. |
+| R-003 | Show the highest-volume markets per section (default 8 per section), across both sites. | BUILT | Changed by Om 2026-11-16 from a top 20 overall: same number in every section, whichever site. Ranked by 24h volume in cash for both sites (Kalshi priced from trades, T-009). Setting for 5/8/10/15 per section. |
 | R-004 | Optionally rank by liquidity (Polymarket) / open interest (Kalshi). | BUILT | Settings. |
 | R-005 | Live prices: auto refresh and refresh on returning to the app. | BUILT | Every 60s while visible. Cards also show the 24h change (T-004). |
 | R-006 | Group the top markets live into topic buckets: Macro / Politics & Geopolitics / Tech & AI / Companies, Energy & Commodities / Other. | BUILT | New list built (T-016). Keyword rules in `BUCKETS`; checked on live Polymarket and Kalshi data in Node, not yet on a phone. |
