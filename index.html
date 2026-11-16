@@ -75,6 +75,9 @@ button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .facts{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13.5px;color:var(--ink-2);align-items:baseline}
 .facts b{font-weight:700;color:var(--ink)}
 .facts .down{color:var(--down)} .facts .up{color:var(--up)}
+.spark{display:inline-block;width:64px;height:18px;align-self:center;margin-left:auto}
+.spark + .rank{margin-left:10px}
+.spark svg{display:block}
 .empty{padding:40px 0;color:var(--ink-2)}
 
 /* Market page */
@@ -383,6 +386,59 @@ async function refresh(){
 }
 const lookup = id => pins[id] || lastAll[id] || byId[id];
 
+/* ---------- Sparklines (T-020) ----------
+   One week of the card's leading outcome (on Movers, the outcome that moved), as a tiny line.
+   To save data: fetched only when a card comes into view, in small form (Polymarket 3-hour points,
+   about 300 bytes; Kalshi hourly through the relay, about 600 bytes), kept for 15 minutes, 4 at a time. */
+const SPARK_MS = 900000, sparkCache = new Map(), sparkWait = []; let sparkBusy = 0;
+const sparkKey = (it, o) => !o ? "" : it.src==="ka" ? (it.series && o.tk ? "ka|"+it.series+"|"+o.tk : "") : (o.tok ? "pm|"+o.tok : "");
+function sparkSVG(pts){
+  if(!pts || pts.length<2) return "";
+  const W = 64, H = 18, t0 = pts[0][0], t1 = pts[pts.length-1][0];
+  let lo = Math.min(...pts.map(p=>p[1])), hi = Math.max(...pts.map(p=>p[1]));
+  if(hi-lo<0.02){ const m = (hi+lo)/2; lo = m-0.01; hi = m+0.01; }
+  const d = pts.map((p,i)=>(i?"L":"M")+((p[0]-t0)/Math.max(1,t1-t0)*W).toFixed(1)+" "+(1+(H-2)*(hi-p[1])/(hi-lo)).toFixed(1)).join("");
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path d="${d}" fill="none" stroke="#0d7680" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+}
+async function sparkLoad(key){
+  const [s, a, b] = key.split("|"), ok = x => isFinite(x[0]) && isFinite(x[1]);
+  if(s==="ka"){
+    if(!kBase()) return [];
+    const d = await getJSON(`${kBase()}/kalshi/history?series=${encodeURIComponent(a)}&ticker=${encodeURIComponent(b)}&r=1w`);
+    return (d.pts||[]).filter(ok);
+  }
+  const d = await getJSON(`${CLOB}?market=${encodeURIComponent(a)}&interval=1w&fidelity=180`);
+  return (d.history||[]).map(x=>[x.t, x.p]).filter(ok);
+}
+function sparkFill(key){
+  const c = sparkCache.get(key);
+  document.querySelectorAll(`.spark[data-sk="${CSS.escape(key)}"]`).forEach(el=>{ el.innerHTML = c && c.pts ? sparkSVG(c.pts) : ""; });
+}
+function sparkPump(){
+  while(sparkBusy<4 && sparkWait.length){
+    const key = sparkWait.shift(); sparkBusy++;
+    sparkLoad(key).then(pts=>sparkCache.set(key, {t:Date.now(), pts}), ()=>sparkCache.set(key, {t:Date.now(), pts:[]}))
+      .finally(()=>{ sparkBusy--; sparkFill(key); sparkPump(); });
+  }
+}
+const sparkFresh = key => { const c = sparkCache.get(key); return c && Date.now()-c.t < SPARK_MS ? c : null; };
+function sparkQueue(key){
+  const c = sparkFresh(key); if(c){ if(c.pts) sparkFill(key); return; }
+  sparkCache.set(key, {...(sparkCache.get(key)||{}), t:Date.now(), loading:true}); sparkWait.push(key); sparkPump();
+}
+const sparkObs = "IntersectionObserver" in window ? new IntersectionObserver(es=>{
+  for(const e of es) if(e.isIntersecting){ sparkObs.unobserve(e.target); sparkQueue(e.target.dataset.sk); }
+}, {rootMargin:"300px 0px"}) : null;
+function sparks(){ // after each render: watch the cards whose line is missing or old
+  if(sparkObs) sparkObs.disconnect();
+  document.querySelectorAll(".spark[data-sk]").forEach(el=>{ if(!sparkFresh(el.dataset.sk)) sparkObs ? sparkObs.observe(el) : sparkQueue(el.dataset.sk); });
+}
+function sparkSpan(it, o){
+  const key = sparkKey(it, o); if(!key) return "";
+  const c = sparkCache.get(key);
+  return `<span class="spark" data-sk="${esc(key)}" title="1 week">${c && c.pts ? sparkSVG(c.pts) : ""}</span>`;
+}
+
 /* ---------- Feed ---------- */
 function ends(it){
   const days = it.end ? Math.ceil((new Date(it.end)-Date.now())/864e5) : null;
@@ -399,7 +455,7 @@ function item(it, rank, mv){
   byId[it.id] = it;
   const on = !!pins[it.id], outs = !mv || it.outcomes.includes(mv) ? it.outcomes : [...it.outcomes.slice(0,2), mv];
   return `<article class="item">
-    <div class="kicker"><span>${SRC[it.src]}</span><span class="sep">|</span><span class="co">${esc(it.topic)}</span>${rank?`<span class="rank">No. ${rank}</span>`:""}</div>
+    <div class="kicker"><span>${SRC[it.src]}</span><span class="sep">|</span><span class="co">${esc(it.topic)}</span>${sparkSpan(it, mv || it.outcomes[0])}${rank?`<span class="rank">No. ${rank}</span>`:""}</div>
     <h2><a href="#m=${encodeURIComponent(it.id)}">${esc(it.title)}</a></h2>
     <div class="outs">${outs.map(o=>`<div class="out">${outRow(o)}</div>`).join("")}</div>
     <div class="facts">${facts(it, mv)}<button class="link" type="button" data-pin="${esc(it.id)}">${on?"Unpin":"Pin"}</button></div>
@@ -438,6 +494,7 @@ function render(){
   }
   if(!html) html = `<div class="empty">${busy||!feed.length?"Loading markets":"Nothing in this section right now."}</div>`;
   $("main").innerHTML = html;
+  sparks();
 }
 
 /* ---------- Market page with a chart you can drag across ---------- */
