@@ -54,6 +54,8 @@ button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .nav button{background:none;border:0;border-bottom:3px solid transparent;padding:13px 0 11px;font-weight:600;font-size:15px;
   white-space:nowrap;cursor:pointer}
 .nav button[aria-current="page"]{border-bottom-color:var(--claret)}
+.search{display:flex;gap:14px;align-items:center;padding:4px 0 12px}
+.search input{flex:1;min-width:0;height:44px;padding:0 10px;font-size:16px;background:#fff;border:1px solid var(--rule);border-radius:3px;-webkit-appearance:none;appearance:none}
 .notice{font-size:14px;color:var(--ink-2);padding:10px 0;border-bottom:1px solid var(--rule)}
 .notice.bad{color:var(--down)}
 
@@ -120,7 +122,8 @@ select,input[type="text"]{width:100%;height:44px;padding:0 10px;font-size:16px;b
   <section id="feedview">
     <header class="mast">
       <h1><a href="#">Prediction Feed</a></h1>
-      <div class="status"><span id="stamp"></span><button class="link" id="refresh" type="button">Refresh</button><button class="link" id="gear" type="button">Settings</button></div>
+      <div class="status"><span id="stamp"></span><button class="link" id="refresh" type="button">Refresh</button><button class="link" id="sbtn" type="button">Search</button><button class="link" id="gear" type="button">Settings</button></div>
+      <form class="search" id="sform" role="search" hidden><input id="sq" type="search" placeholder="Search Polymarket and Kalshi" aria-label="Search markets" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search"><button class="link" id="sclose" type="button">Close</button></form>
       <nav class="nav" id="tabs" aria-label="Sections"></nav>
     </header>
     <div id="notes"></div>
@@ -172,6 +175,7 @@ const MOVERS = 10, MOVER_MIN_VOL = 50000, MOVER_MIN_OUT = 1000, MOVER_MIN_MOVE =
 /* --------------------------------------- */
 
 const PM = "https://gamma-api.polymarket.com/events";
+const PM_SEARCH = "https://gamma-api.polymarket.com/public-search";
 /* Kalshi relay: Kalshi blocks browsers, so live Kalshi prices come through our Cloudflare Worker.
    After deploying it (docs/CLOUDFLARE_SETUP.md), paste its URL between the quotes,
    e.g. "https://prediction-feed-relay.yourname.workers.dev". While it is "", Kalshi markets still
@@ -384,7 +388,7 @@ async function refresh(){
   busy=false; $("refresh").disabled = false; render();
   if(cur) { const u = lookup(cur.id); if(u){ cur = u; paintOutcomes(); } }
 }
-const lookup = id => pins[id] || lastAll[id] || byId[id];
+const lookup = id => pins[id] || lastAll[id] || byId[id] || sById[id];
 
 /* ---------- Sparklines (T-020) ----------
    One week of the card's leading outcome (on Movers, the outcome that moved), as a tiny line.
@@ -439,6 +443,61 @@ function sparkSpan(it, o){
   return `<span class="spark" data-sk="${esc(key)}" title="1 week">${c && c.pts ? sparkSVG(c.pts) : ""}</span>`;
 }
 
+/* ---------- Search (T-005) ----------
+   Polymarket: its public search (optimized=true keeps it to a few KB; that form has prices but no
+   volume or chart ids, so those results are "lite" and the full market loads when opened).
+   Kalshi: the relay's /kalshi/search, which returns full events. Crypto and sports stay out (R-007). */
+let searchOn = false, sQuery = "", sResults = null, sSeq = 0, sTimer = 0, sById = {};
+function litePM(e){
+  const ms = (e.markets||[]).filter(m=>!m.closed && m.active!==false);
+  if(!ms.length || !e.slug) return null;
+  const outs = (ms.length===1 ? json(ms[0].outcomes).map((n,i)=>({name:n, p:Number(json(ms[0].outcomePrices)[i])}))
+    : ms.map(m=>({name:m.groupItemTitle||m.question, p:Number(json(m.outcomePrices)[0])}))).filter(x=>isFinite(x.p)).sort((a,b)=>b.p-a.p);
+  if(!outs.length) return null;
+  return {src:"pm", id:"pm:"+e.slug, ref:e.slug, title:e.title, topic:bucketOf(e.title), skip:SKIP.test(e.title), outcomes:outs.slice(0,3), lite:true,
+    url:"https://polymarket.com/event/"+e.slug};
+}
+async function search(q){
+  const seq = ++sSeq; sQuery = q; sResults = null; render();
+  const run = async (s, f) => { try { const items = (await f()).filter(Boolean); return {items:items.filter(i=>!i.skip), hidden:items.filter(i=>i.skip).length}; }
+    catch(e){ return {err:e.message||"failed"}; } };
+  const jobs = {};
+  if(cfg.src!=="ka") jobs.pm = run("pm", async ()=>((await getJSON(`${PM_SEARCH}?q=${encodeURIComponent(q)}&limit_per_type=10&events_status=active&search_profiles=false&search_tags=false&optimized=true`)).events||[]).map(litePM));
+  if(cfg.src!=="pm") jobs.ka = kBase() ? run("ka", async ()=>((await getJSON(`${kBase()}/kalshi/search?q=${encodeURIComponent(q)}`)).events||[]).map(e=>normKA(e)))
+    : Promise.resolve({err:"it needs the relay"});
+  const res = {}; for(const k in jobs) res[k] = await jobs[k];
+  if(seq!==sSeq) return;
+  for(const k in res) for(const i of res[k].items||[]) sById[i.id] = i;
+  sResults = res; render();
+}
+function sItem(it){
+  return `<article class="item">
+    <div class="kicker"><span>${SRC[it.src]}</span><span class="sep">|</span><span class="co">${esc(it.topic)}</span></div>
+    <h2><a href="#m=${encodeURIComponent(it.id)}">${esc(it.title)}</a></h2>
+    <div class="outs">${it.outcomes.map(o=>`<div class="out">${outRow(o)}</div>`).join("")}</div>
+    ${it.lite ? "" : `<div class="facts">${facts(it)}</div>`}
+  </article>`;
+}
+function searchHTML(){
+  if(sQuery.length<2) return `<div class="empty">Type at least 2 letters.</div>`;
+  if(!sResults) return `<div class="empty">Searching</div>`;
+  let html = "", found = 0, hidden = 0;
+  for(const s of ["pm","ka"]){
+    const r = sResults[s]; if(!r) continue;
+    if(r.err){ html += `<div class="notice bad">${SRC[s]} search failed (${esc(r.err)}).</div>`; continue; }
+    found += r.items.length; hidden += r.hidden;
+    if(r.items.length) html += `<div class="section">${SRC[s]}</div>` + r.items.map(sItem).join("");
+  }
+  if(!found) html += `<div class="empty">No open markets match.</div>`;
+  if(hidden) html += `<div class="notice">${hidden} crypto or sports ${hidden===1?"market":"markets"} left out.</div>`;
+  return html;
+}
+function openSearch(on){
+  searchOn = on; $("sform").hidden = !on; $("tabs").hidden = on;
+  if(on){ $("sq").focus(); } else { sQuery = ""; sResults = null; sSeq++; $("sq").value = ""; }
+  render();
+}
+
 /* ---------- Feed ---------- */
 function ends(it){
   const days = it.end ? Math.ceil((new Date(it.end)-Date.now())/864e5) : null;
@@ -482,6 +541,7 @@ function render(){
   const tabs = ["All", ...(pinned.length?["Pinned"]:[]), ...(movers.length?["Movers"]:[]), ...names];
   $("tabs").innerHTML = tabs.map(n=>`<button type="button" data-t="${esc(n)}"${n===active?' aria-current="page"':""}>${esc(n)}${n==="Pinned"?" ("+pinned.length+")":""}</button>`).join("");
   notes();
+  if(searchOn){ $("main").innerHTML = searchHTML(); return; }
   let html = "";
   if(active==="Movers") html = `<div class="section">Biggest moves in 24 hours</div>` + movers.map(m=>item(m.it, 0, m.o)).join("");
   const pv = active==="Movers" ? [] : pinned.filter(i=> active==="All" || active==="Pinned" || i.topic===active).sort((a,b)=>b.vol24-a.vol24);
@@ -606,7 +666,7 @@ async function route(){
   if(!$("feedview").hidden) feedScroll = scrollY;
   $("feedview").hidden = true; $("detail").hidden = false; scrollTo(0,0);
   let it = lookup(id);
-  if(it && !it.all) it = null; // pins saved by an older version have no token ids
+  if(it && (!it.all || it.lite)) it = null; // pins saved by an older version and lite search results have no token ids
   if(!it){
     $("story").innerHTML = `<div class="empty">Loading market</div>`;
     try { it = id.startsWith("pm:") ? await onePM(id.slice(3)) : await oneKA(id.slice(3)); } catch {}
@@ -618,7 +678,7 @@ async function route(){
 /* ---------- Events ---------- */
 document.addEventListener("click", e=>{
   const s = e.target.closest("[data-pin]");
-  if(s){ const it = lookup(s.dataset.pin) || (cur && cur.id===s.dataset.pin ? cur : null); if(!it) return;
+  if(s){ const it = (cur && cur.id===s.dataset.pin ? cur : null) || lookup(s.dataset.pin); if(!it) return;
     if(pins[it.id]) delete pins[it.id]; else pins[it.id] = it;
     save("pins", JSON.stringify(pins)); queueSync();
     if(cur) paintOutcomes();
@@ -631,6 +691,11 @@ document.addEventListener("click", e=>{
 });
 $("back").addEventListener("click", e=>{ e.preventDefault(); location.hash = ""; });
 $("refresh").onclick = refresh;
+$("sbtn").onclick = ()=>openSearch(!searchOn);
+$("sclose").onclick = ()=>openSearch(false);
+$("sq").addEventListener("input", ()=>{ clearTimeout(sTimer); const q = $("sq").value.trim();
+  sTimer = setTimeout(()=>{ if(q.length>=2) search(q); else { sSeq++; sQuery = q; sResults = null; render(); } }, 450); });
+$("sform").addEventListener("submit", e=>{ e.preventDefault(); clearTimeout(sTimer); const q = $("sq").value.trim(); if(q.length>=2) search(q); $("sq").blur(); });
 $("gear").onclick = ()=>{ $("sTop").value=cfg.top; $("sRank").value=cfg.rank; $("sSrc").value=cfg.src; $("sRelay").value=cfg.relay;
   $("sSync").value=syncCode; $("syncMsg").textContent=syncState(); $("dlg").showModal(); };
 $("sNew").onclick = ()=>{ $("sSync").value = newCode(); $("syncMsg").textContent = "Tap Save, then type this code on your other device."; };

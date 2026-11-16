@@ -12,6 +12,9 @@
 //   /kalshi/events?tickers=A,B,C   live data for up to 120 events
 //   /kalshi/event/<TICKER>         one event (used for pinned markets)
 //   /kalshi/history?series=S&ticker=T&r=1d|1w|1m|max   price history for one market, as [[unix_seconds, yes_price_0_to_1], ...]
+//   /kalshi/search?q=words         open events matching the words (T-005), same shape as /kalshi/events.
+//                                  Kalshi's trade API has no search, so this uses the public search the
+//                                  kalshi.com site itself uses (/v1/search/series), then reads the events normally.
 // Pin sync (T-010), GET and PUT:
 //   /sync/<CODE>                   the list of pinned market ids saved under a random sync code, as {"ids":[...],"updated":...}
 //   Stored in a Workers KV namespace bound to this Worker as SYNC (docs/CLOUDFLARE_SETUP.md). Only market ids
@@ -20,6 +23,8 @@
 // Only the app's own site may call it from a browser (ALLOWED_ORIGIN below).
 
 const KALSHI = "https://api.elections.kalshi.com/trade-api/v2";
+const KALSHI_SEARCH = "https://api.elections.kalshi.com/v1/search/series";
+const SEARCH_MAX = 12;      // events per search
 const ALLOWED_ORIGIN = "https://omkela1-cpu.github.io";
 const CACHE_MS = 20000;     // identical requests within 20s reuse the last answer
 const MAX_TICKERS = 120, CHUNK = 40;
@@ -111,6 +116,24 @@ export default {
         const events = tickers.map(t => got.get(t)).filter(e => e && e.markets.length);
         return send(origin, 200, remember(key, { events, updated: new Date().toISOString() }));
       }
+      if (path === "/kalshi/search") {
+        // letters, digits and a little punctuation only; Kalshi's firewall refuses things like "<"
+        const q = (url.searchParams.get("q") || "").replace(/[^\p{L}\p{N} .,'&%$-]/gu, " ").replace(/\s+/g, " ").trim();
+        if (q.length < 2 || q.length > 60) return send(origin, 400, { error: "give ?q=words (2 to 60 characters)" });
+        const key = "S:" + q.toLowerCase(), hit = fresh(key);
+        if (hit) return send(origin, 200, hit);
+        const r = await fetch(`${KALSHI_SEARCH}?query=${encodeURIComponent(q)}&page_size=${SEARCH_MAX}`, { headers: { Accept: "application/json" } });
+        if (!r.ok) { const e = new Error("Kalshi search HTTP " + r.status); e.status = r.status === 404 ? 502 : r.status; throw e; }
+        const found = (await r.json()).current_page || [];
+        // the app leaves out sports and crypto anyway (R-007); dropping them here also saves data (a crypto event can have 188 markets)
+        const tickers = [...new Set(found.filter(c => c && c.active_market_count > 0 && TICKER.test(c.event_ticker || "") && !/^(sports|crypto)$/i.test(c.category || ""))
+          .map(c => c.event_ticker.toUpperCase()))].slice(0, SEARCH_MAX);
+        if (!tickers.length) return send(origin, 200, remember(key, { events: [] }));
+        const d = await kget(`/events?tickers=${tickers.map(encodeURIComponent).join(",")}&with_nested_markets=true&limit=200`);
+        const got = new Map(); for (const e of d.events || []) got.set(e.event_ticker, slimEvent(e));
+        const events = tickers.map(t => got.get(t)).filter(e => e && e.markets.length);
+        return send(origin, 200, remember(key, { events }));
+      }
       if (path === "/kalshi/history") {
         const series = (url.searchParams.get("series") || "").toUpperCase(), ticker = (url.searchParams.get("ticker") || "").toUpperCase();
         const rg = RANGE[url.searchParams.get("r") || "1w"];
@@ -140,7 +163,7 @@ export default {
         const ev = slimEvent(d.event, (d.event.markets && d.event.markets.length) ? d.event.markets : d.markets);
         return send(origin, 200, remember(key, { event: ev }));
       }
-      return send(origin, 404, { error: "use /kalshi/events?tickers=..., /kalshi/event/<ticker> or /kalshi/history?series=..&ticker=..&r=1w or /sync/<code>" });
+      return send(origin, 404, { error: "use /kalshi/events?tickers=..., /kalshi/event/<ticker> or /kalshi/history?series=..&ticker=..&r=1w, /kalshi/search?q=.. or /sync/<code>" });
     } catch (e) {
       return send(origin, e.status === 404 ? 404 : 502, { error: String(e.message || "failed") });
     }
