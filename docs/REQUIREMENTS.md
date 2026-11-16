@@ -20,7 +20,7 @@ Status: `MET` (built and tested), `BUILT` (built, not fully verified), `OPEN` (n
 | R-014 | Reasonable mobile data use. | BUILT | 3 Polymarket pages per refresh (gzip). See T-008. |
 | R-015 | Movers section: biggest 24h price moves among liquid markets. | BUILT | T-017. Movers tab, 10 biggest moves among markets with at least $50k 24h volume. |
 | R-016 | Market detail screen with a scrubbable price chart (drag to read price and time; 1D / 1W / 1M / All), plus sparklines on cards. | BUILT | Polymarket detail screen and scrubbable chart built (T-018, T-012). Kalshi history (T-019) and sparklines (T-020) built. Not yet checked on a real phone. |
-| R-017 | Search any market on either site and pin it to a watchlist. | OPEN | T-005, T-021 |
+| R-017 | Search any market on either site and pin it to a watchlist. | BUILT | T-005, T-021. Kalshi search needs the Worker redeployed with `/kalshi/search`. |
 | R-018 | Show Kalshi and Polymarket prices side by side for the same event, with the gap and a resolution-rules warning. | DROPPED | Om 2026-11-15: markets are rarely like for like. T-022, T-023 dropped. |
 | R-019 | Pins sync across devices. | BUILT | T-010. Pins only, by sync code. Needs the KV binding on the Worker before it can be confirmed. |
 | R-020 | Visual style matches Om's Short Seller Feed: FT-like, light mode only, serif headlines, no badges, all-caps labels or filler text. | BUILT | T-026. Keep this style in all new screens. |
