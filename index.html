@@ -162,6 +162,10 @@ const SKIP = /\b(bitcoin|btc|ethereum|eth|solana|sol|xrp|crypto|stablecoin|coinb
 const SKIP_TAGS = /^(sports?|esports|crypto|crypto-prices|bitcoin|ethereum|solana|xrp|stablecoins?|soccer|football|basketball|baseball|hockey|tennis|golf|cricket|boxing|ufc|mma|f1|formula-?1|nascar|nfl|nba|mlb|nhl|wnba|ncaa|cfb|epl|atp|wta|pga)$/i;
 const SKIP_CATS = /^(sports|crypto)$/i;
 const OTHER = "Other";
+/* Movers (T-017): biggest 24h price change among liquid markets. A market counts if it traded at least
+   MOVER_MIN_VOL dollars in 24h, the moving outcome itself traded (MOVER_MIN_OUT dollars on Polymarket,
+   contracts on Kalshi), and that outcome is still open in practice (between 3% and 97%). */
+const MOVERS = 10, MOVER_MIN_VOL = 50000, MOVER_MIN_OUT = 1000, MOVER_MIN_MOVE = 0.02;
 /* --------------------------------------- */
 
 const PM = "https://gamma-api.polymarket.com/events";
@@ -189,7 +193,7 @@ function bucketOf(text, extra){ // title first; tags / category only if the titl
   for(const s of [text, extra]) if(s) for(const t of BUCKETS) if(t.re.test(s)) return t.name;
   return OTHER; }
 for(const p of Object.values(pins)) if(p && p.title && ![...BUCKETS.map(b=>b.name), OTHER].includes(p.topic)) p.topic = bucketOf(p.title);
-let feed = [], pinned = [], active = "All", srcState = {pm:"…", ka:"…"}, byId = {}, lastAll = {};
+let feed = [], movers = [], pinned = [], active = "All", srcState = {pm:"…", ka:"…"}, byId = {}, lastAll = {};
 
 function money(n){ n=+n||0; const f=(v,u)=>"$"+(v>=100?Math.round(v):v.toFixed(1))+u;
   if(n>=1e9)return f(n/1e9,"bn"); if(n>=1e6)return f(n/1e6,"m"); if(n>=1e3)return "$"+Math.round(n/1e3)+"k"; return "$"+Math.round(n); }
@@ -211,9 +215,9 @@ function normPM(e){
   if(ms.length===1){
     const p = json(ms[0].outcomePrices).map(Number), o = json(ms[0].outcomes), tk = json(ms[0].clobTokenIds);
     const c = Number(ms[0].oneDayPriceChange); // change of the first outcome; the other side of a two-way market moves the opposite way
-    all = o.map((n,i)=>({name:n,p:p[i],tok:tk[i], d1: i===0 ? c : -c}));
+    all = o.map((n,i)=>({name:n,p:p[i],tok:tk[i], d1: i===0 ? c : -c, v:+ms[0].volume24hr||0}));
   } else {
-    all = ms.map(m=>({name:m.groupItemTitle||m.question, p:Number(json(m.outcomePrices)[0]), tok:json(m.clobTokenIds)[0], d1:Number(m.oneDayPriceChange)}));
+    all = ms.map(m=>({name:m.groupItemTitle||m.question, p:Number(json(m.outcomePrices)[0]), tok:json(m.clobTokenIds)[0], d1:Number(m.oneDayPriceChange), v:+m.volume24hr||0}));
   }
   all = all.filter(x=>isFinite(x.p)).sort((a,b)=>b.p-a.p).slice(0,12);
   if(!all.length) return null;
@@ -242,7 +246,7 @@ function d1K(m){ const l=cents(m,"last_price"), v=cents(m,"previous_price"); ret
 function normKA(e, markets){
   const ms = (markets||e.markets||[]).filter(m=>(m.status||"active")==="active" || m.status==="cur");
   if(!ms.length) return null;
-  const all = ms.map(m=>({name:m.yes_sub_title||m.subtitle||(ms.length===1?"Yes":m.title), p:kPrice(m), tk:m.ticker, d1:d1K(m)}))
+  const all = ms.map(m=>({name:m.yes_sub_title||m.subtitle||(ms.length===1?"Yes":m.title), p:kPrice(m), tk:m.ticker, d1:d1K(m), v:num(m,"volume_24h")}))
     .filter(x=>isFinite(x.p)).sort((a,b)=>b.p-a.p).slice(0,12);
   if(!all.length) return null;
   const outcomes = all.slice(0,3);
@@ -368,6 +372,10 @@ async function refresh(){
     // the same number of markets in every section, whichever site they come from
     const pool = all.filter(i=>!i.skip && !pins[i.id]).sort((a,b)=>b[key]-a[key]), per = {};
     feed = pool.filter(i=> (per[i.topic] = (per[i.topic]||0) + 1) <= cfg.top);
+    movers = all.filter(i=>!i.skip && (i.src==="pm" || i.vol24unit==="usd") && i.vol24>=MOVER_MIN_VOL).map(i=>{
+      const o = i.all.filter(o=>isFinite(o.d1) && o.p>=0.03 && o.p<=0.97 && o.v>=MOVER_MIN_OUT).sort((a,b)=>Math.abs(b.d1)-Math.abs(a.d1))[0];
+      return o && Math.abs(o.d1)>=MOVER_MIN_MOVE ? {it:i, o} : null;
+    }).filter(Boolean).sort((a,b)=>Math.abs(b.o.d1)-Math.abs(a.o.d1)).slice(0,MOVERS);
     $("stamp").textContent = "Updated " + new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
   }
   busy=false; $("refresh").disabled = false; render();
@@ -382,19 +390,19 @@ function ends(it){
   return `<span>Ends ${days<=0?"today":days===1?"tomorrow":"in "+days+" days"}</span>`;
 }
 function chg(d){ const a=Math.abs(d*100); return a<0.05 ? "unchanged" : `<span class="${d>0?"up":"down"}">${d>0?"▲":"▼"} ${a.toFixed(a<10?1:0)} points</span>`; }
-function facts(it){
-  const top = it.outcomes[0], d1 = top && top.d1;
+function facts(it, mv){ // mv: the outcome that moved most (Movers), else the leading outcome
+  const top = mv || it.outcomes[0], d1 = top && top.d1;
   return (isFinite(d1) ? `<span>${esc(top.name)} 24h ${chg(d1)}</span>` : "") + `<span>24h volume <b>${it.vol24unit==="contracts" ? compact(it.vol24)+" contracts" : money(it.vol24)}</b></span><span>${it.src==="pm"?"Liquidity":"Open interest"} ${money(it.liq)}</span>${ends(it)}`;
 }
 const outRow = o => `<span class="nm">${esc(o.name)}</span><span class="bar"><i style="width:${Math.round(o.p*100)}%"></i></span><span class="pc">${pct(o.p)}</span>`;
-function item(it, rank){
+function item(it, rank, mv){
   byId[it.id] = it;
-  const on = !!pins[it.id];
+  const on = !!pins[it.id], outs = !mv || it.outcomes.includes(mv) ? it.outcomes : [...it.outcomes.slice(0,2), mv];
   return `<article class="item">
     <div class="kicker"><span>${SRC[it.src]}</span><span class="sep">|</span><span class="co">${esc(it.topic)}</span>${rank?`<span class="rank">No. ${rank}</span>`:""}</div>
     <h2><a href="#m=${encodeURIComponent(it.id)}">${esc(it.title)}</a></h2>
-    <div class="outs">${it.outcomes.map(o=>`<div class="out">${outRow(o)}</div>`).join("")}</div>
-    <div class="facts">${facts(it)}<button class="link" type="button" data-pin="${esc(it.id)}">${on?"Unpin":"Pin"}</button></div>
+    <div class="outs">${outs.map(o=>`<div class="out">${outRow(o)}</div>`).join("")}</div>
+    <div class="facts">${facts(it, mv)}<button class="link" type="button" data-pin="${esc(it.id)}">${on?"Unpin":"Pin"}</button></div>
   </article>`;
 }
 function notes(){
@@ -412,15 +420,17 @@ function render(){
   pinned = Object.values(pins);
   const order = [...BUCKETS.map(b=>b.name), OTHER];
   const names = order.filter(n=>feed.some(i=>i.topic===n) || pinned.some(i=>i.topic===n));
-  if(active!=="All" && active!=="Pinned" && !names.includes(active)) active = "All";
+  if(!["All","Pinned","Movers"].includes(active) && !names.includes(active)) active = "All";
   if(active==="Pinned" && !pinned.length) active = "All";
-  const tabs = ["All", ...(pinned.length?["Pinned"]:[]), ...names];
+  if(active==="Movers" && !movers.length) active = "All";
+  const tabs = ["All", ...(pinned.length?["Pinned"]:[]), ...(movers.length?["Movers"]:[]), ...names];
   $("tabs").innerHTML = tabs.map(n=>`<button type="button" data-t="${esc(n)}"${n===active?' aria-current="page"':""}>${esc(n)}${n==="Pinned"?" ("+pinned.length+")":""}</button>`).join("");
   notes();
   let html = "";
-  const pv = pinned.filter(i=> active==="All" || active==="Pinned" || i.topic===active).sort((a,b)=>b.vol24-a.vol24);
+  if(active==="Movers") html = `<div class="section">Biggest moves in 24 hours</div>` + movers.map(m=>item(m.it, 0, m.o)).join("");
+  const pv = active==="Movers" ? [] : pinned.filter(i=> active==="All" || active==="Pinned" || i.topic===active).sort((a,b)=>b.vol24-a.vol24);
   if(pv.length) html += `<div class="section">Pinned</div>` + pv.map(i=>item(i)).join("");
-  if(active!=="Pinned"){
+  if(active!=="Pinned" && active!=="Movers"){
     for(const n of order.filter(n=>active==="All"||active===n)){
       const list = feed.filter(i=>i.topic===n); // already in rank order; numbered within the section
       if(list.length) html += `<div class="section">${esc(n)}</div>` + list.map((i,k)=>item(i, k+1)).join("");
